@@ -2319,11 +2319,7 @@ grmt.__index = newcclosure(function(self, v)
                 local predictedPosition
                 
                 if aimPartObject and aimPartObject:IsA("BasePart") then
-                    if targetAimbot.Type == "AssemblyLinearVelocity" then 
-                        predictedPosition = aimPartObject.CFrame + (aimPartObject.AssemblyLinearVelocity * aimPrediction)
-                    elseif targetAimbot.Type == "Velocity" then 
-                        predictedPosition = aimPartObject.CFrame + (aimPartObject.Velocity * aimPrediction)
-                    end
+                    predictedPosition = aimPartObject.CFrame + (aimPartObject.Velocity * aimPrediction)
                     if propertyName == "Hit" then
                         return predictedPosition
                     end
@@ -2336,6 +2332,7 @@ grmt.__index = newcclosure(function(self, v)
 end)
 
 setreadonly(grmt, true)
+
 
 local themes = {
     outline = Color3.fromRGB(45, 45, 45),
@@ -3520,9 +3517,6 @@ do
     local masterswitchaim = aiming:section({name = "Rage"}) do
         masterswitchaim:toggle({name = "Enable", default = false, callback = function(bool)
             atlas['Target Aimbot'].Enabled = bool
-        end})
-        masterswitchaim:dropdown({name = "Aim Type", items = {"Velocity", "AssemblyLinearVelocity"}, default = atlas['Target Aimbot'].Method, multi = false, callback = function(bool)
-            atlas['Target Aimbot'].Method = bool
         end})
         masterswitchaim:keybind({name = "Keybind", callback = function()
             if atlas['Target Aimbot'].Enabled then
