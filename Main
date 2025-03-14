@@ -1,5 +1,7 @@
 if game:GetService("UserInputService").TouchEnabled then 
     game.Players.LocalPlayer:Kick("Mobile Support is down atm wait for an update")
+else 
+game.Players.LocalPlayer:Kick("[Atlas V3 Status]: Down, come back later")
 end
 
 game.StarterGui:SetCore("SendNotification", {
