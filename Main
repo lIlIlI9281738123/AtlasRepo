@@ -1,9 +1,3 @@
-if game:GetService("UserInputService").TouchEnabled then 
-    game.Players.LocalPlayer:Kick("Mobile Support is down atm wait for an update")
-else 
-game.Players.LocalPlayer:Kick("[Atlas V3 Status]: Down, come back later")
-end
-
 game.StarterGui:SetCore("SendNotification", {
     Title = "discord.gg/SjE932Qugv",
     Text = "",
@@ -13,13 +7,13 @@ game.StarterGui:SetCore("SendNotification", {
 getgenv().atlas = { 
     ['Target Aimbot'] = {
         ['Enabled'] = false,
+        ['Method'] = "Velocity",
         ['Use Camera'] = {
             ['Enabled'] = false,
             ['Smoothness'] = 0.7,
         },
         ['Keybind'] = "",
         ['Prediction'] = {
-            ['Show Stats'] = false,
             ['Amount'] = 0.167791,
             ['Auto Prediction'] = {
                 ['Enabled'] = false,
@@ -28,7 +22,6 @@ getgenv().atlas = {
         },
         ['AimPart'] = 'HumanoidRootPart',
         ['View'] = false,
-        ['Look At'] = false,
         ['Notify'] = false,
         ['ForceHit'] = false,
 		['EnableDrawings'] = {
@@ -36,15 +29,14 @@ getgenv().atlas = {
                 ['Enabled'] = false,
                 ['Visible'] = false,
                 ['Color'] = Color3.fromRGB(84, 101, 255),
+                ['Position'] = "Mouse",
             },
 			['Dot'] = {
                 ['Enabled'] = false,
-                ['Visible'] = false,
                 ['Color'] = Color3.fromRGB(84, 101, 255),
             },
             ['FOV'] = {
                 ['Enabled'] = false,
-                ['Visible'] = false,
                 ['Radius'] = 120,
                 ['Color'] = Color3.fromRGB(84, 101, 255),
             },
@@ -175,10 +167,7 @@ getgenv().atlas = {
                 ['Type'] = 'Random', 
                 ['Visualize'] = {
                     ['Enabled'] = false,
-                    ['Type'] = 'Dummy',
                     ['DummyColor'] = Color3.fromRGB(84, 101, 255),
-                    ['LineColor'] = Color3.fromRGB(84, 101, 255),
-                    ['DotColor'] = Color3.fromRGB(84, 101, 255),
                 },
                 ['Random Power'] = 23.5, 
                 ['Underground Height'] = 5,
@@ -187,11 +176,7 @@ getgenv().atlas = {
                 ['Strafe Height'] = 0,
                 ['Around Distance'] = 20,
                 ['Notify'] = false,
-                ['AutoShoot'] = {
-                    ['Enabled'] = false,
-                    ['Method'] = "Tool",
-                    ['WhenToShoot'] = "On Target",
-                },
+                ['AutoShoot'] = false,
                 ['Attach'] = false,
             },
         },
@@ -221,7 +206,10 @@ getgenv().atlas = {
             },
             ['World'] = {
                 ['Enable'] = true,
-                ['Time'] = 24,
+                ['Clock'] = {
+                    ['Enabled'] = false,
+                    ['Time'] = 1,
+                },
                 ['Technology'] = {
                     ['Enabled'] = false,
                     ['Type'] = "Future",
@@ -236,6 +224,10 @@ getgenv().atlas = {
                 ['Brightness'] = {
                     ['Enable'] = false,
                     ['Amount'] = 1,
+                },
+                ['Sky Box'] = {
+                    ['Enabled'] = false,
+                    ['Type'] = "Nebula",
                 },
                 ['Fog'] = {
                     ['Enable'] = false,
@@ -345,7 +337,7 @@ local Assets = {
         FogEnd = game.Lighting.FogEnd,
         ColorShift_Top = game.Lighting.ColorShift_Top,
         ColorShift_Bottom = game.Lighting.ColorShift_Bottom,
-        Technology_Old = game.Lighting.Technology,
+        Technology_Old = game.Lighting.Technology,    
     },
     AnimationStored = {
         currentAnimation,
@@ -404,6 +396,7 @@ local drawings = {
     FollowGunCircle = Drawing.new("Circle")
 }
 
+
 drawings.DesyncCircle.Color = Color3.new(255,255,255)
 drawings.DesyncCircle.Radius = 10
 drawings.DesyncCircle.Filled = true
@@ -442,7 +435,7 @@ drawings.CFrameDesyncTracer.Thickness = 2
 
 drawings.TargetDot.Visible = false
 drawings.TargetDot.Filled = true
- 
+
 getgenv().esp = {
     Enabled = false,
     AutoStep = true,
@@ -486,8 +479,7 @@ getgenv().esp = {
     
 }
 
-local camera = workspace.CurrentCamera
-local world_to_viewport = camera.WorldToViewportPoint
+local world_to_viewport = Camera.WorldToViewportPoint
 local inf = math.huge
 
 local skeleton_connections = {
@@ -510,7 +502,7 @@ function vector2_floor(vector2)
 end
 
 function cframe_to_viewport(cframe, floor)
-    local position, visible = world_to_viewport(camera, cframe * (cframe - cframe.p):ToObjectSpace(camera.CFrame - camera.CFrame.p).p)
+    local position, visible = world_to_viewport(Camera, cframe * (cframe - cframe.p):ToObjectSpace(Camera.CFrame - Camera.CFrame.p).p)
     if floor then
         position = vector2_floor(position)
     end
@@ -560,7 +552,7 @@ function player:Check()
         health = humanoid.Health,
         maxhealth = humanoid.MaxHealth,
         healthfactor = humanoid.Health / humanoid.MaxHealth,
-        distance = (rootpart.CFrame.p - camera.CFrame.p).magnitude
+        distance = (rootpart.CFrame.p - Camera.CFrame.p).magnitude
     }
 end
 
@@ -777,11 +769,11 @@ function player:GetBoxSize(position, cframe)
         local SizeX = math.max(math.abs(position.X - x.X), math.abs(position.X - z.X))
         local SizeY = math.max(math.abs(position.Y - y.Y), math.abs(position.Y - x.Y))
 
-        return Vector2.new(math.clamp(math.floor(SizeX), 3, inf), math.clamp(math.floor(SizeY), 6, inf))
+        return Vector2.new(math.clamp(math.floor(SizeX), 3, math.huge), math.clamp(math.floor(SizeY), 6, math.huge))
     else
-        local distance = (camera.CFrame.p - cframe.p).magnitude
-        local factor = 1 / ((distance / 3) * math.tan(math.rad(camera.FieldOfView / 2)) * 2) * 1000
-        return Vector2.new(math.clamp(math.floor(factor * esp.BoxStaticXFactor), 3, inf), math.clamp(math.floor(factor * esp.BoxStaticYFactor), 6, inf))
+        local distance = (Camera.CFrame.p - cframe.p).magnitude
+        local factor = 1 / ((distance / 3) * math.tan(math.rad(Camera.FieldOfView / 2)) * 2) * 1000
+        return Vector2.new(math.clamp(math.floor(factor * esp.BoxStaticXFactor), 3, math.huge), math.clamp(math.floor(factor * esp.BoxStaticYFactor), 6, math.huge))
     end
 end
 
@@ -931,20 +923,18 @@ Players.PlayerAdded:Connect(function(newplr)
     end
 end)
 
-UserInputService.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        if atlas['Target Aimbot'].EnableDrawings.FOV.Enabled then
-            drawings.FOVCircle.Visible = atlas['Target Aimbot'].EnableDrawings.FOV.Visible
-            drawings.FOVCircle.Color = atlas['Target Aimbot'].EnableDrawings.FOV.Color
-            drawings.FOVCircle.Radius = atlas['Target Aimbot'].EnableDrawings.FOV.Radius
+local function UpdateFOVCircle()
+    if atlas['Target Aimbot'].EnableDrawings.FOV.Enabled then
+        drawings.FOVCircle.Visible = true
+        drawings.FOVCircle.Color = atlas['Target Aimbot'].EnableDrawings.FOV.Color
+        drawings.FOVCircle.Radius = atlas['Target Aimbot'].EnableDrawings.FOV.Radius
 
-            local fovPosition = UserInputService:GetMouseLocation()
-            drawings.FOVCircle.Position = Vector2.new(fovPosition.X, fovPosition.Y)
-        else
-            drawings.FOVCircle.Visible = false
-        end
+        local fovPosition = UserInputService:GetMouseLocation()
+        drawings.FOVCircle.Position = Vector2.new(fovPosition.X, fovPosition.Y)
+    else
+        drawings.FOVCircle.Visible = false
     end
-end)
+end
 
 RayCastCheck = function(Part, PartDescendant)
     local Origin = Camera.CFrame.Position
@@ -1065,7 +1055,7 @@ RecalculateLOL = function(obj, delta)
     end
 end
 
-RunService.Heartbeat:Connect(function()
+local function Resolver()
     local aimbotSettings = atlas['Target Aimbot']
 
     if aimbotSettings.Enabled and TargetPlayer and TargetPlayer.Character then
@@ -1088,7 +1078,7 @@ RunService.Heartbeat:Connect(function()
             end
         end
     end
-end)
+end
 
 Mouse.KeyDown:Connect(function(Key)
     if (Key == atlas['Target Aimbot'].Keybind) and atlas['Target Aimbot'].Enabled then
@@ -1107,94 +1097,16 @@ Mouse.KeyDown:Connect(function(Key)
     end
 end)
 
-task.spawn(function()
-    while true do
-        task.wait() 
-        if atlas['Target Aimbot'].Enabled and atlas['Target Aimbot']['Look At'] and TargetPlayer and TargetPlayer.Character then
-            local targetCharacter = TargetPlayer.Character
-            local targetHumanoidRootPart = targetCharacter:FindFirstChild("HumanoidRootPart")
-            local targetHumanoid = targetCharacter:FindFirstChild("Humanoid")
-
-            if targetHumanoid and targetHumanoidRootPart then
-                humanoid.AutoRotate = false
-                humanoidRootPart.CFrame = CFrame.new(
-                    humanoidRootPart.CFrame.Position,
-                    Vector3.new(targetHumanoidRootPart.Position.X, humanoidRootPart.CFrame.Position.Y, targetHumanoidRootPart.Position.Z)
-                )
-            end
-        else
-            humanoid.AutoRotate = true
-        end 
-    end
-end)
-
-RunService.RenderStepped:Connect(function()
+local function UpdateSpectate()
     if atlas['Target Aimbot'].View and TargetPlayer then
         Camera.CameraSubject = TargetPlayer.Character
     else
         Camera.CameraSubject = Character:WaitForChild("Humanoid")
     end
-end)
+end
 
-task.spawn(function()
-    while true do
-        task.wait() 
 
-        local function playAnimationLoop(animNames, folders, condition)
-            if not getgenv()[condition] or not getgenv().enableantiaim then return end
-
-            local H
-            for _, folderName in ipairs(folders) do
-                local foundFolder = ReplicatedStorage:FindFirstChild(folderName)
-                if foundFolder then
-                    H = foundFolder
-                    break
-                end
-            end
-
-            if not H or not Character then return end
-
-            local humanoid = Character:FindFirstChildWhichIsA("Humanoid")
-            if not humanoid or not humanoid:FindFirstChild("Animator") then return end
-
-            local Animator = humanoid.Animator
-            local Dance
-            for _, animName in ipairs(animNames) do
-                local foundAnim = H:FindFirstChild(animName)
-                if foundAnim then
-                    Dance = foundAnim
-                    break
-                end
-            end
-
-            if not Dance then return end
-
-            local LoadedAnim = Animator:LoadAnimation(Dance)
-            while getgenv()[condition] do
-                LoadedAnim:Play()
-                task.wait(0.1)
-                LoadedAnim:Stop()
-                task.wait(0.1)
-            end
-
-            pcall(function() LoadedAnim:Stop() end)
-        end
-
-        playAnimationLoop(
-            { "Crouching", "Crouch", "Kneeling", "crouch" },
-            { "ClientAnimations", "Animations" },
-            "spammingcrouch"
-        )
-
-        playAnimationLoop(
-            { "Block", "Dodge", "Blocking" },
-            { "ClientAnimations", "Animations" },
-            "spammingblock"
-        )
-    end
-end)
-
-RunService:BindToRenderStep("UpdateDrawings", Enum.RenderPriority.Camera.Value, function()
+local function UpdateDotAndTracerAndHighlight()
     if not TargetPlayer or not TargetPlayer.Character then
         drawings.TargetDot.Visible = false
         drawings.TargetTracer.Visible = false
@@ -1230,12 +1142,17 @@ RunService:BindToRenderStep("UpdateDrawings", Enum.RenderPriority.Camera.Value, 
         if aimSettings.EnableDrawings.Tracer.Enabled then
             local tracer = drawings.TargetTracer
             local Torso = Camera:WorldToViewportPoint(humanoidRootPart.Position)
+            local MouseTo = UserInputService:GetMouseLocation()
 
             if onScreen then
+                if aimSettings.EnableDrawings.Tracer.Position == "Mouse" then 
+                    tracer.From = MouseTo
+                elseif aimSettings.EnableDrawings.Tracer.Position == "Torso" then
+                    tracer.From = Vector2.new(Torso.X, Torso.Y)
+                end
                 tracer.Color = aimSettings.EnableDrawings.Tracer.Color
                 tracer.Transparency = 1
                 tracer.Thickness = 2
-                tracer.From = Vector2.new(Torso.X, Torso.Y)
                 tracer.To = Vector2.new(screenPosition.X, screenPosition.Y)
                 tracer.Visible = true
             else
@@ -1261,7 +1178,7 @@ RunService:BindToRenderStep("UpdateDrawings", Enum.RenderPriority.Camera.Value, 
         drawings.TargetDot.Visible = false
         drawings.TargetTracer.Visible = false
     end
-end)
+end
 
 local function findMainEvent()
     return ReplicatedStorage:FindFirstChild("MainEvent") or ReplicatedStorage:FindFirstChild("MAINEVENT") or ReplicatedStorage:FindFirstChild("Remote")
@@ -1472,46 +1389,13 @@ if bullet_path and bullet_path:IsA("Folder") then
     bullet_path.ChildAdded:Connect(SirenAdded)
 end
 
-RunService.RenderStepped:Connect(function()
+local function UpdateAspectR()
     if atlas.Misc.Extras['Aspect Ratio'].Enabled then
         if Camera.CFrame ~= originalCameraCFrame then
             local X, Y, Z, R00, R01, R02, R10, R11, R12, R20, R21, R22 = Camera.CFrame:GetComponents()
             Camera.CFrame = CFrame.new(X, Y, Z, R00 * atlas.Misc.Extras['Aspect Ratio'].X / 100, R01 * atlas.Misc.Extras['Aspect Ratio'].Y / 100, R02, R10, R11 * atlas.Misc.Extras['Aspect Ratio'].Y / 100, R12, R20 * atlas.Misc.Extras['Aspect Ratio'].X / 100, R21 * atlas.Misc.Extras['Aspect Ratio'].Y / 100, R22)
         end
     end
-end)
-
-function Slash(Position)
-    local Part = Instance.new("Part")
-    Part.Position = Position
-    Part.CanCollide = false
-    Part.Anchored = true
-    Part.Transparency = 1
-    Part.Parent = workspace
-    
-    local Attachment = Instance.new("Attachment")
-    Attachment.Parent = Part
-
-    local Crescents = Instance.new("ParticleEmitter")
-    Crescents.Name = "Crescents"
-    Crescents.Lifetime = NumberRange.new(0.19, 0.38)
-    Crescents.SpreadAngle = Vector2.new(-360, 360)
-    Crescents.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.1932907, 0), NumberSequenceKeypoint.new(0.778754, 0), NumberSequenceKeypoint.new(1, 1)})
-    Crescents.LightEmission = 10
-    Crescents.Color = ColorSequence.new(atlas.Misc.Extras.Gun['Hit Detection']['Hit Effect'].Color)
-    Crescents.VelocitySpread = -360
-    Crescents.Speed = NumberRange.new(0.0826858, 0.0826858)
-    Crescents.Brightness = 4
-    Crescents.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.398774, 8.8026266, 2.2834616), NumberSequenceKeypoint.new(1, 11.477972, 1.860431)})
-    Crescents.Enabled = false
-    Crescents.ZOffset = 0.4542207
-    Crescents.Rate = 50
-    Crescents.Texture = "rbxassetid://12509373457"
-    Crescents.RotSpeed = NumberRange.new(800, 1000)
-    Crescents.Rotation = NumberRange.new(-360, 360)
-    Crescents.Orientation = Enum.ParticleOrientation.VelocityPerpendicular
-    Crescents.Parent = Attachment
-    Crescents:Emit()
 end
 
 function CreateParticleEmitter(name, properties)
@@ -1523,7 +1407,7 @@ function CreateParticleEmitter(name, properties)
     return emitter
 end
 
-function DetailedSlash(Position)
+function Slash(Position)
     local Part = Instance.new("Part")
     Part.Position = Position
     Part.CanCollide = false
@@ -1534,132 +1418,39 @@ function DetailedSlash(Position)
     local Attachment = Instance.new("Attachment")
     Attachment.Parent = Part
 
-    local EffectColor = atlas.Misc.Extras.Gun['Hit Detection']['Hit Effect'].Color
-
-    local Glow = CreateParticleEmitter("Glow", {
-        Lifetime = NumberRange.new(0.16),
-        Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 1),
-            NumberSequenceKeypoint.new(0.142, 0.618),
-            NumberSequenceKeypoint.new(1, 1)
-        }),
-        Color = ColorSequence.new(EffectColor),
-        Speed = NumberRange.new(0),
-        Brightness = 5,
-        Size = NumberSequence.new(9.19, 16.5),
-        Enabled = false,
-        ZOffset = -0.056,
-        Rate = 50,
-        Texture = "rbxassetid://8708637750",
-        Parent = Attachment
-    })
-
-    local Gradient1 = CreateParticleEmitter("Gradient1", {
-        Lifetime = NumberRange.new(0.3),
-        Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 1),
-            NumberSequenceKeypoint.new(0.15, 0.3),
-            NumberSequenceKeypoint.new(1, 1)
-        }),
-        Color = ColorSequence.new(EffectColor),
-        Speed = NumberRange.new(0),
-        Brightness = 6,
-        Size = NumberSequence.new(0, 11.63),
-        Enabled = false,
-        ZOffset = 0.919,
-        Rate = 50,
-        Texture = "rbxassetid://8196169974",
-        Parent = Attachment
-    })
-
-    local Shards = CreateParticleEmitter("Shards", {
-        Lifetime = NumberRange.new(0.19, 0.7),
-        SpreadAngle = Vector2.new(-90, 90),
-        Color = ColorSequence.new(EffectColor),
-        Drag = 10,
-        VelocitySpread = -90,
-        Speed = NumberRange.new(97.75, 147),
-        Brightness = 4,
-        Size = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 0),
-            NumberSequenceKeypoint.new(0.285, 1.24, 0.153),
-            NumberSequenceKeypoint.new(1, 0)
-        }),
-        Enabled = false,
-        Acceleration = Vector3.new(0, -57, 0),
-        ZOffset = 0.571,
-        Rate = 50,
-        Texture = "rbxassetid://8030734851",
-        Rotation = NumberRange.new(90, 90),
-        Orientation = Enum.ParticleOrientation.VelocityParallel,
-        Parent = Attachment
-    })
-
-    local Effect = CreateParticleEmitter("Effect", {
-        Lifetime = NumberRange.new(0.4, 0.7),
-        FlipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4,
-        SpreadAngle = Vector2.new(360, -360),
-        LockedToPart = true,
-        Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 1),
-            NumberSequenceKeypoint.new(0.107, 0.194),
-            NumberSequenceKeypoint.new(0.776, 0.881),
-            NumberSequenceKeypoint.new(1, 1)
-        }),
-        LightEmission = 1,
-        Color = ColorSequence.new(EffectColor),
-        Drag = 1,
-        VelocitySpread = 360,
-        Speed = NumberRange.new(0.0037),
-        Brightness = 2.1,
-        Size = NumberSequence.new(6.97, 9.92),
-        Enabled = false,
-        ZOffset = 0.478,
-        Rate = 50,
-        Texture = "rbxassetid://9484012464",
-        RotSpeed = NumberRange.new(-150, -150),
-        FlipbookMode = Enum.ParticleFlipbookMode.OneShot,
-        Rotation = NumberRange.new(50, 50),
-        Orientation = Enum.ParticleOrientation.VelocityPerpendicular,
-        Parent = Attachment
-    })
+    local EffectColor = Color3.fromRGB(255, 100, 100) 
 
     local Crescents = CreateParticleEmitter("Crescents", {
-        Lifetime = NumberRange.new(0.19, 0.38),
-        SpreadAngle = Vector2.new(-360, 360),
+        Lifetime = NumberRange.new(0.1, 0.3), 
+        SpreadAngle = Vector2.new(-180, 180), 
         Transparency = NumberSequence.new({
             NumberSequenceKeypoint.new(0, 1),
-            NumberSequenceKeypoint.new(0.193, 0),
-            NumberSequenceKeypoint.new(0.779, 0),
+            NumberSequenceKeypoint.new(0.2, 0),
+            NumberSequenceKeypoint.new(0.8, 0),
             NumberSequenceKeypoint.new(1, 1)
         }),
-        LightEmission = 1,
+        LightEmission = 0.5, 
         Color = ColorSequence.new(EffectColor),
-        VelocitySpread = -360,
-        Speed = NumberRange.new(0.083),
-        Brightness = 20,
+        VelocitySpread = -180, 
+        Speed = NumberRange.new(0.05, 0.08), 
+        Brightness = 2,
         Size = NumberSequence.new({
             NumberSequenceKeypoint.new(0, 0),
-            NumberSequenceKeypoint.new(0.399, 8.8, 2.28),
-            NumberSequenceKeypoint.new(1, 11.48, 1.86)
+            NumberSequenceKeypoint.new(0.4, 4, 1),
+            NumberSequenceKeypoint.new(1, 6, 1)
         }),
         Enabled = false,
-        ZOffset = 0.454,
-        Rate = 50,
+        ZOffset = 0.2, 
+        Rate = 20, 
         Texture = "rbxassetid://12509373457",
-        RotSpeed = NumberRange.new(800, 1000),
-        Rotation = NumberRange.new(-360, 360),
+        RotSpeed = NumberRange.new(400, 600), 
+        Rotation = NumberRange.new(-180, 180),
         Orientation = Enum.ParticleOrientation.VelocityPerpendicular,
         Parent = Attachment
     })
 
-    Crescents:Emit()
-    Effect:Emit()
-    Shards:Emit()
-    Gradient1:Emit()
-    Glow:Emit()
+    Crescents:Emit(10) 
 end
-
 
 function ElectricHitEffect(Position)
     local Part = Instance.new("Part")
@@ -1710,39 +1501,6 @@ function ElectricHitEffect(Position)
     ParticleEmitter2.Parent = Attachment
 
     ParticleEmitter2:Emit()
-end
-
-function CumHitEffect(Position)
-    local Part = Instance.new("Part")
-    Part.Position = Position
-    Part.CanCollide = false
-    Part.Anchored = true
-    Part.Transparency = 1
-    Part.Parent = workspace
-
-    local Attachment = Instance.new("Attachment")
-    Attachment.Parent = Part
-
-    local Foam = Instance.new("ParticleEmitter")
-    Foam.Name = "Foam"
-
-    Foam.LightInfluence = 0.5
-    Foam.Lifetime = NumberRange.new(1, 1)
-    Foam.SpreadAngle = Vector2.new(360, -360)
-    Foam.VelocitySpread = 360
-    Foam.Squash = NumberSequence.new(1)
-    Foam.Speed = NumberRange.new(20, 20)
-    Foam.Brightness = 2.5
-    Foam.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.1016692, 0.32544375, 0.32544375), NumberSequenceKeypoint.new(0.6494689, 0.5100555, 0.20637595), NumberSequenceKeypoint.new(1, 0)})
-    Foam.Enabled = false
-    Foam.Acceleration = Vector3.new(0, -66.04029846191406, 0)
-    Foam.Rate = 100
-    Foam.Texture = "rbxassetid://8297030850"
-    Foam.Rotation = NumberRange.new(-90, -90)
-    Foam.Orientation = Enum.ParticleOrientation.VelocityParallel
-    Foam.Parent = Attachment
-    
-    Foam:Emit()
 end
 
 instance_new = function(type, properties) -- stolen from starhook heheh
@@ -1893,6 +1651,11 @@ local function handleHitmarker(plr, char)
                     PlaySound(getcustomasset(Sound), V)
                 end
 
+                if health < 0 then 
+                    V = 0
+                    connection:Disconnect()
+                end
+
                 if gunSettings.Enabled and gunSettings['Hit Effect'].Enabled then
                     local hitEffectType = gunSettings['Hit Effect'].Type
                     local hitEffectColor = gunSettings['Hit Effect'].Color
@@ -1976,7 +1739,7 @@ end
 local oldnigga = sigmasigmatext.Transparency 
 local oldnigga2 = drawings.FollowGunCircle.Transparency 
 
-RunService.RenderStepped:Connect(function()
+local function UpdateCrosshair()
     local currentTime = tick()
     
     if currentTime - Assets.OtherStored.lastrender > 0 then
@@ -2093,11 +1856,11 @@ RunService.RenderStepped:Connect(function()
     else
         sigmasigmatext.Transparency = oldnigga
     end
-end)
+end
 
 local previousTargetCharacter = nil
 
-RunService.Heartbeat:Connect(function()
+local function Strafing()  
     local targetAimbot = atlas['Target Aimbot']
     if not (targetAimbot and targetAimbot.Enabled) then return end
     
@@ -2108,31 +1871,31 @@ RunService.Heartbeat:Connect(function()
         local targetCharacter = TargetPlayer.Character
         local targetHumanoidRootPart = targetCharacter:FindFirstChild("HumanoidRootPart")
 
-        --[[if targetHumanoidRootPart and (math.abs(targetHumanoidRootPart.Position.X) > 5000 or math.abs(targetHumanoidRootPart.Position.Y) > 5000 or math.abs(targetHumanoidRootPart.Position.Z) > 5000) then 
-            return 
-        end--]]
+        if targetHumanoidRootPart then
+            if targetStrafe.Mode == "Normal" then
+                Assets.OtherStored.StrafeSpeed = Assets.OtherStored.StrafeSpeed + (targetStrafe.Speed)
+                local newCFrame = targetHumanoidRootPart.CFrame 
+                    * CFrame.Angles(0, math.rad(Assets.OtherStored.StrafeSpeed), 0) 
+                    * CFrame.new(0, targetStrafe.Height, targetStrafe.Distance)
+                humanoidRootPart.CFrame = newCFrame
 
-        if targetStrafe.Mode == "Normal" then
-            Assets.OtherStored.StrafeSpeed = Assets.OtherStored.StrafeSpeed + targetStrafe.Speed
-            local newCFrame = targetHumanoidRootPart.CFrame * CFrame.Angles(0, math.rad(Assets.OtherStored.StrafeSpeed), 0) * CFrame.new(0, targetStrafe.Height, targetStrafe.Distance)
-            humanoidRootPart.CFrame = newCFrame
+            elseif targetStrafe.Mode == "Sky" then
+                local newPosition = targetHumanoidRootPart.Position + Vector3.new(0, targetStrafe['Sky Distance'], 0)
+                humanoidRootPart.CFrame = CFrame.new(newPosition)
 
-        elseif targetStrafe.Mode == "Sky" then
-            local newPosition = targetHumanoidRootPart.Position + Vector3.new(0, targetStrafe['Sky Distance'], 0)
-            humanoidRootPart.CFrame = CFrame.new(newPosition)
+            elseif targetStrafe.Mode == "Random" then
+                local randomOffset = Vector3.new(
+                    math.random(-targetStrafe.RandomizeAmount, targetStrafe.RandomizeAmount),
+                    math.random(-targetStrafe.RandomizeAmount, targetStrafe.RandomizeAmount),
+                    math.random(-targetStrafe.RandomizeAmount, targetStrafe.RandomizeAmount)
+                )
+                humanoidRootPart.CFrame = CFrame.new(targetHumanoidRootPart.Position + randomOffset)
+            end
 
-        elseif targetStrafe.Mode == "Random" then
-            local randomOffset = Vector3.new(
-                math.random(-targetStrafe.RandomizeAmount, targetStrafe.RandomizeAmount),
-                math.random(-targetStrafe.RandomizeAmount, targetStrafe.RandomizeAmount),
-                math.random(-targetStrafe.RandomizeAmount, targetStrafe.RandomizeAmount)
-            )
-            humanoidRootPart.CFrame = CFrame.new(targetHumanoidRootPart.Position + randomOffset)
+            previousTargetCharacter = targetCharacter
         end
-
-        previousTargetCharacter = targetCharacter
     end
-end)
+end
 
 local LineColor = Color3.fromRGB(84, 101, 255)
 
@@ -2168,7 +1931,7 @@ local function updateTargetLine(character, mousePosition)
     end
 end
 
-RunService:BindToRenderStep("UpdateAimView", Enum.RenderPriority.Camera.Value, function()
+local function UpdateAimView()
     TargetLine.Color = LineColor 
     if enableaimviewweta and TargetPlayer and TargetPlayer.Character then
         local bodyEffects = TargetPlayer.Character:FindFirstChild("BodyEffects")
@@ -2178,7 +1941,7 @@ RunService:BindToRenderStep("UpdateAimView", Enum.RenderPriority.Camera.Value, f
     else
         TargetLine.Transparency = 1
     end
-end)
+end
 
 local VirtualInputManager = game:GetService("VirtualInputManager")
 
@@ -2187,27 +1950,18 @@ local function onCharacterAdded(newCharacter)
 end
 Client.CharacterAdded:Connect(onCharacterAdded)
 
-RunService:BindToRenderStep("UpdateAutoShootCSync", Enum.RenderPriority.Camera.Value, function()
-    if not Character then return end
+local function UpdateAutoShootCSYNC()
+        if not Character then return end
 
-    local tool = Character:FindFirstChildWhichIsA("Tool")
-    local config = atlas.Misc['Anti Lock']['C-Sync']
+        local tool = Character:FindFirstChildWhichIsA("Tool")
+        local config = atlas.Misc['Anti Lock']['C-Sync']
 
-    if not config.Enabled or not config.AutoShoot.Enabled then return end
+        if not config.Enabled or not config.AutoShoot then return end
 
-    local method, whenToShoot = config.AutoShoot.Method, config.AutoShoot.WhenToShoot
-    local isClientShooting = (whenToShoot == "On Client" and not TargetPlayer)
-    local isTargetShooting = (whenToShoot == "On Target" and TargetPlayer)
-
-    if method == "Tool" and tool then
-        if isClientShooting or isTargetShooting then
+        if tool then
             tool:Activate()
         end
-    elseif method == "Mouse" and (isClientShooting or isTargetShooting) then
-        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
     end
-end)
 
 local function updateShootSound2()
     if not atlas.Misc.Extras.DisableShootSounds then return end
@@ -2230,7 +1984,7 @@ workspace.DescendantAdded:Connect(function(v)
     end
 end)
 
-RunService.Heartbeat:Connect(function()
+local function ToggleTrail(Bool)
     if not Character then
         return
     end
@@ -2238,7 +1992,7 @@ RunService.Heartbeat:Connect(function()
         return
     end
 
-    if atlas.Misc.Extras.World['Self Chams'].UseChams and atlas.Misc.Extras.World['Self Trail'].Enabled then
+    if Bool then
         local BlaBla = humanoidRootPart:FindFirstChild("BlaBla")
 
         if not BlaBla then
@@ -2273,7 +2027,17 @@ RunService.Heartbeat:Connect(function()
             end
         end
     end
-end)
+end
+
+local function UpdateTrail()
+    if atlas.Misc.Extras.World['Self Chams'].UseChams then 
+        if atlas.Misc.Extras.World['Self Trail'].Enabled == true then 
+            ToggleTrail(true)
+        else 
+            ToggleTrail(false)
+        end
+    end
+end
 
 local bodyClone = game:GetObjects("rbxassetid://95894164778773")[1]
 bodyClone.Humanoid:Destroy()
@@ -2315,9 +2079,7 @@ for _, child in pairs(bodyClone:GetChildren()) do
     end
 end
 
-local Script = {
-    SavedCFrame = nil,
-}
+local hello = nil
 
 local function CframeDesyncHelloSkids()
     local enabled = atlas.Misc['Anti Lock']['C-Sync']
@@ -2334,7 +2096,7 @@ local function CframeDesyncHelloSkids()
 
     local originalCFrame = humanoidRootPart.CFrame
     
-    Script.SavedCFrame = originalCFrame
+    hello = originalCFrame
 
     local attach
     if enabled.Attach then
@@ -2375,46 +2137,23 @@ local function CframeDesyncHelloSkids()
         end
     end    
 
-    visualizeChams.FillColor = enabled['Visualize'].DummyColor
-    visualizeChams.OutlineColor = enabled['Visualize'].DummyColor
+
+    if visualizeChams.FillColor ~= enabled['Visualize'].DummyColor then
+        visualizeChams.FillColor = enabled['Visualize'].DummyColor
+        visualizeChams.OutlineColor = enabled['Visualize'].DummyColor
+    end
 
     if enabled['Visualize'].Enabled then
-        if enabled['Visualize'].Type == 'Dummy' then
-            bodyClone.Parent = workspace
-            local visualRoot = bodyClone:FindFirstChild("HumanoidRootPart")
-            if visualRoot then
-                visualRoot.Velocity = Vector3.zero
-                if bodyClone then 
-                    bodyClone:SetPrimaryPartCFrame(impostorDummyCFrame)
-                end
+        bodyClone.Parent = workspace
+        local visualRoot = bodyClone:FindFirstChild("HumanoidRootPart")
+        if visualRoot then
+            visualRoot.Velocity = Vector3.zero
+            if bodyClone then 
+                bodyClone:SetPrimaryPartCFrame(impostorDummyCFrame)
             end
-        else
-            bodyClone.Parent = nil
-        end
-
-        if enabled['Visualize'].Type == 'Dot' then
-            local desyncedPos = Camera:WorldToViewportPoint(impostorDummyCFrame.Position)
-            drawings.CFrameDesyncDot.Visible = true
-            drawings.CFrameDesyncDot.Position = Vector2.new(desyncedPos.X, desyncedPos.Y)
-            drawings.CFrameDesyncDot.Color = enabled['Visualize'].DotColor
-        else
-            drawings.CFrameDesyncDot.Visible = false
-        end
-
-        if enabled['Visualize'].Type == 'Line' then
-            local desyncedPos = Camera:WorldToViewportPoint(impostorDummyCFrame.Position)
-            local hrpPos = Camera:WorldToViewportPoint(humanoidRootPart.Position)
-            drawings.CFrameDesyncTracer.Visible = true
-            drawings.CFrameDesyncTracer.From = Vector2.new(hrpPos.X, hrpPos.Y)
-            drawings.CFrameDesyncTracer.To = Vector2.new(desyncedPos.X, desyncedPos.Y)
-            drawings.CFrameDesyncTracer.Color = enabled['Visualize'].LineColor
-        else
-            drawings.CFrameDesyncTracer.Visible = false
         end
     else
         bodyClone.Parent = nil
-        drawings.CFrameDesyncDot.Visible = false
-        drawings.CFrameDesyncTracer.Visible = false
     end
 
     humanoidRootPart.CFrame = impostorDummyCFrame
@@ -2422,14 +2161,7 @@ local function CframeDesyncHelloSkids()
     humanoidRootPart.CFrame = originalCFrame
 end
 
-task.spawn(function()
-    while true do
-        task.wait() 
-        CframeDesyncHelloSkids()
-    end
-end)
-
-RunService.Heartbeat:Connect(function()
+local function UpdateVelocitySpoofing()
     local velocitySpoofer = atlas.Misc['Anti Lock']['Velocity Spoofer']
     if Character and velocitySpoofer.Enabled then
         local SaveVelocity = humanoidRootPart.AssemblyLinearVelocity
@@ -2461,13 +2193,13 @@ RunService.Heartbeat:Connect(function()
         humanoidRootPart.AssemblyLinearVelocity = SaveVelocity
         humanoidRootPart.AssemblyAngularVelocity = SaveRotVelocity
     end
-end)
+end
 
 local clearTable = function(tab)
     table.clear(tab) 
 end
 
-RunService.Heartbeat:Connect(function()
+local function UpdateVelocitySpoofing2()
     local vs = atlas.Misc['Anti Lock']['Velocity Spoofer']
     if vs.PredictionBreaker.Enabled and vs.Enabled then
         if Character then
@@ -2523,10 +2255,10 @@ RunService.Heartbeat:Connect(function()
     end
     
     RunService.Heartbeat:Wait()
-end)
+end
 
-spawn(function()
-    while true do
+--[spawn(function()
+    --[[while true do
         task.wait() 
         local vs = atlas.Misc['Anti Lock']['Velocity Spoofer']
         if vs.CripWalk.Enabled then
@@ -2534,11 +2266,11 @@ spawn(function()
             setfflag("S2PhysicsSenderRate", tostring(Value))
 
             RunService.RenderStepped:Wait()
-        else 
-            setfflag("S2PhysicsSenderRate", tostring(16))
+        else
+            setfflag("S2PhysicsSenderRate", tostring(152))
         end
     end
-end)
+end)--]]
 
 local originalCFrame
 originalCFrame = hookmetamethod(game, "__index", newcclosure(function(self, key)
@@ -2546,9 +2278,9 @@ originalCFrame = hookmetamethod(game, "__index", newcclosure(function(self, key)
         local rootPart = Character:FindFirstChild("HumanoidRootPart")
         if rootPart and Character:FindFirstChildOfClass("Humanoid") then
             if self == rootPart then
-                return Script.SavedCFrame or CFrame.new()
+                return hello or CFrame.new()
             elseif self == Character:FindFirstChild("Head") then
-                return (Script.SavedCFrame or CFrame.new()) + Vector3.new(0, rootPart.Size.Y / 2 + 0.5, 0)
+                return (hello or CFrame.new()) + Vector3.new(0, rootPart.Size.Y / 2 + 0.5, 0)
             end
         end
     end
@@ -2584,9 +2316,14 @@ grmt.__index = newcclosure(function(self, v)
 
             if target and target.Character then
                 local aimPartObject = target.Character:FindFirstChild(aimPart)
+                local predictedPosition
                 
                 if aimPartObject and aimPartObject:IsA("BasePart") then
-                    local predictedPosition = aimPartObject.CFrame + (aimPartObject.AssemblyLinearVelocity * aimPrediction)
+                    if targetAimbot.Type == "AssemblyLinearVelocity" then 
+                        predictedPosition = aimPartObject.CFrame + (aimPartObject.AssemblyLinearVelocity * aimPrediction)
+                    elseif targetAimbot.Type == "Velocity" then 
+                        predictedPosition = aimPartObject.CFrame + (aimPartObject.Velocity * aimPrediction)
+                    end
                     if propertyName == "Hit" then
                         return predictedPosition
                     end
@@ -2852,11 +2589,12 @@ local function updateTargetInfo(TargetPlayer)
 
     local bodyEffects = TargetPlayer.Character:FindFirstChild("BodyEffects")
     if bodyEffects and bodyEffects:FindFirstChild("Armor") then
-        if armorText and bodyEffects then
-            local NewArmor = bodyEffects:FindFirstChild("Armor").Value or 100
-            armorText.Text = math.floor(NewArmor) .. "/" .. math.floor(MaxArmor)
-            armorBar.Size = UDim2.new(math.clamp(NewArmor / MaxArmor, 0, 1), 0, 1, 0)
-        end
+        local NewArmor = bodyEffects:FindFirstChild("Armor").Value 
+        local MaxArmor = 200
+        armorText.Text = math.floor(NewArmor) .. "/" .. math.floor(MaxArmor)
+        armorBar.Size = UDim2.new(math.clamp(NewArmor / MaxArmor, 0, 1), 0, 1, 0)
+    else 
+        return 
     end
 
     if not bodyEffects then 
@@ -2869,7 +2607,7 @@ local function updateTargetInfo(TargetPlayer)
     accentLine.BackgroundColor3 = atlas['Target Aimbot'].EnableDrawings.UI.Color['Outline']
     outline.BackgroundColor3 = atlas['Target Aimbot'].EnableDrawings.UI.Color['Outline']
 
-    if Character and Character:FindFirstChild("HumanoidRootPart") and TargetPlayer.Character and TargetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+    if humanoidRootPart and TargetPlayer.Character and TargetPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local distance = (TargetPlayer.Character.HumanoidRootPart.Position - humanoidRootPart.Position).Magnitude
         distanceText.Text = tostring(math.round(distance)) .. " m"
     else
@@ -2890,14 +2628,14 @@ Client.CharacterAdded:Connect(function(char)
     humanoidRootPart = char:WaitForChild("HumanoidRootPart")
 end)
 
-RunService.RenderStepped:Connect(function()
+local function UpdateTargetUI()
     if TargetPlayer and atlas['Target Aimbot'].EnableDrawings.UI.Enabled then
         updateTargetInfo(TargetPlayer)
         showUI()
     else 
        hideUI()
     end
-end) 
+end
 
 local function onCharacterAdded(newCharacter)
     character = newCharacter
@@ -2958,7 +2696,7 @@ function ToolAmmo(Name)
     end
 end
 
-RunService:BindToRenderStep("UpdateReload", Enum.RenderPriority.Camera.Value, function()
+local function UpdateReloading()
     if not atlas.Misc['Auto Reload'] then
         return
     end
@@ -2975,7 +2713,7 @@ RunService:BindToRenderStep("UpdateReload", Enum.RenderPriority.Camera.Value, fu
             return 
         end
     end
-end)
+end
 
 task.spawn(function()
     while true do
@@ -2999,7 +2737,7 @@ task.spawn(function()
     end
 end)
 
-RunService:BindToRenderStep("UpdateSlow", Enum.RenderPriority.Camera.Value, function()
+local function UpdateSlow()
     if not (atlas.Misc['Anti Slow']) then
         return
     end
@@ -3034,18 +2772,15 @@ RunService:BindToRenderStep("UpdateSlow", Enum.RenderPriority.Camera.Value, func
             effect:Destroy()
         end
     end
-end)
+end
 
-task.spawn(function()
-    while true do
-        task.wait() 
-        if atlas.Misc['No Jumpcool Down'] == true then
-            Character.Humanoid.UseJumpPower = false
-        else 
-            Character.Humanoid.UseJumpPower = true
-        end
+local function UpdateJumpCoolD()
+    if atlas.Misc['No Jumpcool Down'] == true then
+        humanoid.UseJumpPower = false
+    else 
+        humanoid.UseJumpPower = true
     end
-end)
+end
 
 local function AnimPlay(ID, SPEED)
     if Assets.AnimationStored.currentAnimation then
@@ -3121,7 +2856,7 @@ end)
 
 RunService.Heartbeat:Connect(handleAnimation)
 
-RunService:BindToRenderStep("UpdateAnimationNone", Enum.RenderPriority.Camera.Value, function()
+local function UpdateAnimationNone()
     if not Character then return end
 
     Assets.OtherStored.HumanoidCache = humanoid
@@ -3155,9 +2890,67 @@ RunService:BindToRenderStep("UpdateAnimationNone", Enum.RenderPriority.Camera.Va
             end
         end
     end
+end
+
+task.spawn(function()
+    while true do
+        task.wait() 
+
+        local function playAnimationLoop(animNames, folders, condition)
+            if not getgenv()[condition] or not getgenv().enableantiaim then return end
+
+            local H
+            for _, folderName in ipairs(folders) do
+                local foundFolder = ReplicatedStorage:FindFirstChild(folderName)
+                if foundFolder then
+                    H = foundFolder
+                    break
+                end
+            end
+
+            if not H or not Character then return end
+
+            local humanoid = Character:FindFirstChildWhichIsA("Humanoid")
+            if not humanoid or not humanoid:FindFirstChild("Animator") then return end
+
+            local Animator = humanoid.Animator
+            local Dance
+            for _, animName in ipairs(animNames) do
+                local foundAnim = H:FindFirstChild(animName)
+                if foundAnim then
+                    Dance = foundAnim
+                    break
+                end
+            end
+
+            if not Dance then return end
+
+            local LoadedAnim = Animator:LoadAnimation(Dance)
+            while getgenv()[condition] do
+                LoadedAnim:Play()
+                task.wait(0.1)
+                LoadedAnim:Stop()
+                task.wait(0.1)
+            end
+
+            pcall(function() LoadedAnim:Stop() end)
+        end
+
+        playAnimationLoop(
+            { "Crouching", "Crouch", "Kneeling", "crouch" },
+            { "ClientAnimations", "Animations" },
+            "spammingcrouch"
+        )
+
+        playAnimationLoop(
+            { "Block", "Dodge", "Blocking" },
+            { "ClientAnimations", "Animations" },
+            "spammingblock"
+        )
+    end
 end)
 
-RunService:BindToRenderStep("UpdateAA", Enum.RenderPriority.Camera.Value, function()
+local function UpdateAA()
     if not getgenv().enableantiaim then return end
 
     local spinbot = getgenv().spinbot
@@ -3167,13 +2960,13 @@ RunService:BindToRenderStep("UpdateAA", Enum.RenderPriority.Camera.Value, functi
         humanoid.AutoRotate = true
         
         if spinbot then
-            humanoidRootPart.CFrame *= CFrame.Angles(0, math.rad(getgenv().spinbotspeed), 0)
+            humanoidRootPart.CFrame *= CFrame.Angles(0, math.rad(spinbotspeed), 0)
         elseif jitter then
-            local jitterAngle = math.rad(60) + math.rad((math.random(0, 1) == 1 and getgenv().jitterDelay or -getgenv().jitterDelay))
+            local jitterAngle = math.rad(60) + math.rad((math.random(0, 1) == 1 and jitterDelay or -jitterDelay))
             humanoidRootPart.CFrame *= CFrame.Angles(0, jitterAngle, 0)
         end
     end
-end)
+end
 
 local ArmorTable = {
     "[High-Medium Armor] - $2440",
@@ -3270,7 +3063,12 @@ end)
 
 local function updateLighting()
     if atlas.Misc.Extras.World.Enabled then
-        Lightning.ClockTime = atlas.Misc.Extras.World.Time
+        if atlas.Misc.Extras.World.Clock.Enabled then 
+            Lightning.ClockTime = atlas.Misc.Extras.World.Clock.Time
+        else
+            local stored = Assets.WorldStored
+            Lightning.ClockTime = stored.ClockTime
+        end
 
         if atlas.Misc.Extras.World.Ambience.Enabled then
             local colors = atlas.Misc.Extras.World.Ambience.Color
@@ -3286,6 +3084,70 @@ local function updateLighting()
             Lightning.ColorShift_Bottom = stored.ColorShift_Bottom
         end
 
+        if atlas.Misc.Extras.World['Sky Box'].Enabled then 
+            local skyboxes = {
+                ["Nebula"] = {
+                    Bk = "rbxassetid://6277563515", Dn = "rbxassetid://6277565742",
+                    Ft = "rbxassetid://6277567481", Lf = "rbxassetid://6277569562",
+                    Rt = "rbxassetid://6277583250", Up = "rbxassetid://6277586065"
+                },
+                ["Dark Night"] = {
+                    Bk = "rbxassetid://6285719338", Dn = "rbxassetid://6285721078",
+                    Ft = "rbxassetid://6285722964", Lf = "rbxassetid://6285724682",
+                    Rt = "rbxassetid://6285726335", Up = "rbxassetid://6285730635"
+                },
+                ["Space"] = {
+                    Bk = "rbxassetid://877168885", Dn = "rbxassetid://877169070",
+                    Ft = "rbxassetid://877169154", Lf = "rbxassetid://877169233",
+                    Rt = "rbxassetid://877169317", Up = "rbxassetid://877169431"
+                },
+                ["Green"] = {
+                    Bk = "rbxassetid://8754359769", Dn = "rbxassetid://8754359769",
+                    Ft = "rbxassetid://8754359769", Lf = "rbxassetid://8754359769",
+                    Rt = "rbxassetid://8754359769", Up = "rbxassetid://8754359769"
+                },
+                ["Red"] = {
+                    Bk = "rbxassetid://2571711090", Dn = "rbxassetid://2571711090",
+                    Ft = "rbxassetid://2571711090", Lf = "rbxassetid://2571711090",
+                    Rt = "rbxassetid://2571711090", Up = "rbxassetid://2571711090"
+                },
+                ["Purple"] = {
+                    Bk = "rbxassetid://9971120429", Dn = "rbxassetid://9971120429",
+                    Ft = "rbxassetid://9971120429", Lf = "rbxassetid://9971120429",
+                    Rt = "rbxassetid://9971120429", Up = "rbxassetid://9971120429"
+                },
+                ["Doom Spire"] = {
+                    Bk = "rbxassetid://600830446", Dn = "rbxassetid://600830446",
+                    Ft = "rbxassetid://600830446", Lf = "rbxassetid://600830446",
+                    Rt = "rbxassetid://600830446", Up = "rbxassetid://600830446"
+                },
+                ["Galaxy V1"] = {
+                    Bk = "rbxassetid://6489194051", Dn = "rbxassetid://6489194051",
+                    Ft = "rbxassetid://6489194051", Lf = "rbxassetid://6489194051",
+                    Rt = "rbxassetid://6489194051", Up = "rbxassetid://6489194051"
+                },
+            }
+        
+            local skyboxData = skyboxes[atlas.Misc.Extras.World['Sky Box'].Type]
+        
+            if skyboxData then
+                local sky = Instance.new("Sky")
+                sky.SkyboxBk = skyboxData.Bk
+                sky.SkyboxDn = skyboxData.Dn
+                sky.SkyboxFt = skyboxData.Ft
+                sky.SkyboxLf = skyboxData.Lf
+                sky.SkyboxRt = skyboxData.Rt
+                sky.SkyboxUp = skyboxData.Up
+                sky.Parent = game.Lighting  
+            end
+        else
+            for _, obj in pairs(game.Lighting:GetChildren()) do
+                if obj:IsA("Sky") then
+                    obj:Destroy()
+                end
+            end
+        end
+        
         Lightning.Brightness = atlas.Misc.Extras.World.Brightness.Enabled and atlas.Misc.Extras.World.Brightness.Amount or Assets.WorldStored.Brightness
         Lightning.Technology = atlas.Misc.Extras.World.Technology.Enabled and atlas.Misc.Extras.World.Technology.Type or Assets.WorldStored.Technology_Old
 
@@ -3301,6 +3163,11 @@ local function updateLighting()
             Lightning.FogEnd = stored.FogEnd
         end
     else
+        for _, obj in pairs(game.Lighting:GetChildren()) do
+            if obj:IsA("Sky") then
+                obj:Destroy()
+            end
+        end
         local stored = Assets.WorldStored
         Lightning.ClockTime = stored.ClockTime
         Lightning.OutdoorAmbient = stored.OutdoorAmbient
@@ -3334,8 +3201,7 @@ local function GetTool()
 
     return Tool
 end
-
-RunService:BindToRenderStep("UpdateSelf", Enum.RenderPriority.Camera.Value, function()
+local function UpdateSelf()
     if atlas.Misc.Extras.World['Self Chams'].UseChams and atlas.Misc.Extras.World['Self Chams'].Enabled  and Character then
         local hasTool = false
 
@@ -3400,9 +3266,9 @@ RunService:BindToRenderStep("UpdateSelf", Enum.RenderPriority.Camera.Value, func
         end
         Assets.OtherStored.OGMats = {}
     end       
-end)
+end
 
-RunService:BindToRenderStep("UpdateGun", Enum.RenderPriority.Camera.Value, function()
+local function UpdateGun()
     local Gun = GetTool(Gun)
 if atlas.Misc.Extras.Gun["Gun Chams"].UseChams and atlas.Misc.Extras.Gun['Gun Chams'].Enabled and Character and Gun then
     for _, v in pairs(Gun:GetChildren()) do
@@ -3434,9 +3300,9 @@ else
     end
     Assets.OtherStored.OGGunProps = {}
 end
-end)
+end
 
-RunService.PostSimulation:Connect(function()
+local function UpdateFOV()
     if not Camera then 
         return 
     end
@@ -3451,7 +3317,7 @@ RunService.PostSimulation:Connect(function()
     elseif not getgenv().togglemyfovXDD == true then
         Camera.FieldOfView = saved
     end
-end)
+end
 
 local Pred = Drawing.new("Text")
 Pred.Text = "Prediction: "
@@ -3472,15 +3338,15 @@ updatePredictionValue = function()
         local PingNumber = tonumber(PingValue[1])
 
         if atlas['Target Aimbot'].Prediction["Auto Prediction"]["Mode"] == "Default" then 
-            atlas['Target Aimbot'].Prediction.Amount = tonumber(PingNumber / 230 * 0.1 + 0.1)
+            atlas['Target Aimbot'].Prediction.Amount = tonumber(PingNumber / 230 * 0.1 + 0.2)
         elseif atlas['Target Aimbot'].Prediction["Auto Prediction"]["Mode"] == "Old" then 
             if PingNumber < 140 then
-                atlas['Target Aimbot'].Prediction.Amount = tonumber(PingNumber / 1000 + 0.1)
+                atlas['Target Aimbot'].Prediction.Amount = tonumber(PingNumber / 1000 + 0.2)
             else
-                atlas['Target Aimbot'].Prediction.Amount = (PingNumber / 1000 + 0.070)
+                atlas['Target Aimbot'].Prediction.Amount = (PingNumber / 1000 + 0.076)
             end
         elseif atlas['Target Aimbot'].Prediction["Auto Prediction"]["Mode"] == "V2" then 
-            atlas['Target Aimbot'].Prediction.Amount = tonumber(0.1 + (PingNumber / 2000) + ((PingNumber / 1000) * (PingNumber / 1500) * 1.2))
+            atlas['Target Aimbot'].Prediction.Amount = tonumber(0.1 + (PingNumber / 2000) + ((PingNumber / 1000) * (PingNumber / 1500) * 1.4))
 
         elseif atlas['Target Aimbot'].Prediction["Auto Prediction"]["Mode"] == "Hood Customs" then 
             atlas['Target Aimbot'].Prediction.Amount = tonumber(0.01 + (PingNumber / 2000) + ((PingNumber / 1000) * (PingNumber / 1500) * 0.01))
@@ -3489,45 +3355,10 @@ updatePredictionValue = function()
 end
 
 
-RunService.Heartbeat:Connect(function()
+local function UpdatePrediction()
     local settings = atlas['Target Aimbot']
     local PredictionValue = settings.Prediction.Amount
-    
-    if settings.Prediction['Show Stats'] then 
-        Pred.Visible = true
-        Pred.Text = "Prediction: " .. tostring(PredictionValue) 
-    else 
-        Pred.Visible = false
-    end
     PredictionValue = updatePredictionValue()
-end)
-
-local function notifyTarget(targetPlayer)
-	if atlas['Target Aimbot'].Notify and targetPlayer then
-        library:notification({text = "Targetting " .. targetPlayer.DisplayName})   
-	end
-end
-
-local function unlockTarget()
-	TargetPlayer = nil
-	if atlas['Target Aimbot'].Notify then
-        library:notification({text = "Unlocked"})   
-	end
-end
-
-local function toggleTargeting()
-	if TargetL then
-		local targetPlayer = getClosestPlayerToCursor()
-		
-		if targetPlayer then
-			notifyTarget(targetPlayer)
-			TargetPlayer = targetPlayer
-		else
-			unlockTarget()
-		end
-	else
-		unlockTarget()
-	end
 end
 
 local function autoselectplayerbruh()
@@ -3535,19 +3366,7 @@ local function autoselectplayerbruh()
         TargetPlayer = getClosestPlayerToCursor()
         if atlas['Target Aimbot'].Highlight.Enabled and TargetPlayer then 
             LocalHL.Parent = TargetPlayer.Character
-        end
-        if atlas['Target Aimbot']['Look At'] and TargetPlayer then 
-            local targetHRP = TargetPlayer.Character and TargetPlayer.Character:FindFirstChild("HumanoidRootPart")
-        
-            if humanoidRootPart and targetHRP then
-                humanoid.AutoRotate = false
-                humanoidRootPart.CFrame = CFrame.new(humanoidRootPart.Position, Vector3.new(targetHRP.Position.X, humanoidRootPart.Position.Y, targetHRP.Position.Z))
-            end
-        else
-            if Character and humanoid then
-                humanoid.AutoRotate = true
-            end
-        end        
+        end  
     elseif not atlas['Target Aimbot']['Auto Select'].Enabled then
         TargetL = nil
     end
@@ -3590,7 +3409,7 @@ if UserInputService.TouchEnabled then
     end)
 end
 
-RunService:BindToRenderStep("UpdateAutoSelect", Enum.RenderPriority.Camera.Value, function()
+local function AutoSelect()
     if atlas['Target Aimbot']['Auto Select'].Enabled and atlas['Target Aimbot'].Enabled then
         local currentTime = tick()
         if currentTime - Assets.OtherStored.lastExecutionTime >= atlas['Target Aimbot']['Auto Select'].Delay then
@@ -3598,7 +3417,7 @@ RunService:BindToRenderStep("UpdateAutoSelect", Enum.RenderPriority.Camera.Value
             Assets.OtherStored.lastExecutionTime = currentTime
         end
     end
-end)
+end
 
 local function isBlacklisted(placeId)
     for _, gameInfo in ipairs(Assets.BlacklistedGames) do
@@ -3618,23 +3437,76 @@ local function UpdateCheck()
     end
 end
 
-RunService:BindToRenderStep("UpdateThirdPerson", Enum.RenderPriority.Camera.Value, function()
+local function ThirdPerson()
     if atlas.Misc.ThirdPerson.Enabled then
         Camera.CFrame *= CFrame.new(Vector3.new(atlas.Misc.ThirdPerson.X, atlas.Misc.ThirdPerson.Y, atlas.Misc.ThirdPerson.Y))
     end
-end)
+end
+
+do
+    RunService.Heartbeat:Connect(function()
+        Resolver()
+
+        CframeDesyncHelloSkids()
+
+        Strafing()
+
+        AutoSelect()
+
+        UpdateDotAndTracerAndHighlight()
+
+        ThirdPerson()
+
+        UpdatePrediction()
+
+        UpdateAnimationNone()
+
+        UpdateVelocitySpoofing()
+
+        UpdateVelocitySpoofing2()
+
+        UpdateTrail()
+    end)
+    
+    RunService.RenderStepped:Connect(function()
+        UpdateFOVCircle()
+
+        UpdateSpectate()
+
+        UpdateTargetUI()
+        
+        UpdateAspectR()
+
+        UpdateSlow()
+
+        UpdateReloading()
+
+        UpdateAimView()
+
+    end)
+    
+    RunService.Stepped:Connect(function()
+        UpdateFOV()
+
+        UpdateAA()
+
+        UpdateGun()
+
+        UpdateSelf()
+        
+        UpdateJumpCoolD()
+
+        UpdateAutoShootCSYNC()
+
+        UpdateCrosshair()
+    end)    
+end
 
 repeat task.wait() until game:IsLoaded()
 UpdateCheck()
 
-if config.uienabled then 
-    if uiloaded then 
-        return
-        library:notification({text = "UI Already Loaded"})
-    else
-        getgenv().uiloaded = true
 local flags = library.flags 
-local title = 'Atlas V3 ∣ uid: ' .. Client.UserId
+local title = 'Atlas V3'
 local window = library:window({
     name = title, 
     size = UDim2.fromOffset(722, 500) 
@@ -3643,22 +3515,32 @@ local window = library:window({
 local aiming = window:tab({name = "Aiming"})
 local visuals = window:tab({name = "Visuals"})
 local misc = window:tab({name = "Misc"})
---local network = window:tab({name = "Network"})
 
 do
     local masterswitchaim = aiming:section({name = "Rage"}) do
         masterswitchaim:toggle({name = "Enable", default = false, callback = function(bool)
             atlas['Target Aimbot'].Enabled = bool
         end})
-        masterswitchaim:keybind({subsection = "Keybind", object = "Enable", name = "Keybind", callback = function(bool)
+        masterswitchaim:dropdown({name = "Aim Type", items = {"Velocity", "AssemblyLinearVelocity"}, default = atlas['Target Aimbot'].Method, multi = false, callback = function(bool)
+            atlas['Target Aimbot'].Method = bool
+        end})
+        masterswitchaim:keybind({name = "Keybind", callback = function()
             if atlas['Target Aimbot'].Enabled then
                 TargetL = not TargetL
-                toggleTargeting()
-            end
-        
-            if not TargetPlayer then
-                TargetPlayer = nil
-            end
+                if TargetL then
+                    TargetPlayer = getClosestPlayerToCursor()
+                    if atlas['Target Aimbot'].Notify and TargetPlayer then
+                        library:notification({text = "Targetting: " .. TargetPlayer.DisplayName})   
+                    end
+                else
+                    if TargetPlayer then 
+                        if atlas['Target Aimbot'].Notify then
+                            library:notification({text = "Unlocked"})   
+                        end
+                    end
+                    TargetPlayer = nil
+                end               
+            end            
         end})
         masterswitchaim:dropdown({name = "Hit Parts", items = {"Head", "HumanoidRootPart","UpperTorso","LowerTorso"}, default = atlas['Target Aimbot'].AimPart, multi = false, callback = function(bool)
             atlas['Target Aimbot'].AimPart = bool
@@ -3672,15 +3554,9 @@ do
         masterswitchaim:toggle({name = "Spectate", default = false, callback = function(bool)
             atlas['Target Aimbot'].View = bool
         end})
-        masterswitchaim:toggle({name = "Look At", default = false, callback = function(bool)
-            atlas['Target Aimbot']['Look At'] = bool
-        end})
     end
 
     local pred = aiming:section({name = "Prediction", side = "left"}) do
-        --[[pred:toggle({name = "Show Stats", default = false, callback = function(bool)
-            atlas['Target Aimbot'].Prediction['Show Stats'] = bool
-        end})--]]
         pred:toggle({name = "Auto Prediction", default = false, callback = function(bool)
             atlas['Target Aimbot'].Prediction['Auto Prediction'].Enabled = bool
         end})
@@ -3691,14 +3567,6 @@ do
             atlas['Target Aimbot'].Prediction.Amount = bool
         end})
     end
-
-    --[[if game.PlaceId == 9825515356 then
-        local epiclol = aiming:section({name = "Epic Haxz", side = "left"}) do
-            epiclol:toggle({name = "Force Hit", default = false, callback = function(bool)
-                atlas['Target Aimbot'].ForceHit = bool
-            end})
-        end
-    end--]]
 
     local targetuilol = aiming:section({name = "Target UI", side = "left"}) do
         targetuilol:toggle({name = "Enable", default = false, callback = function(bool)
@@ -3757,7 +3625,6 @@ do
     local aimbotdrawings = aiming:section({name = "Drawings", side = "right"}) do
         aimbotdrawings:toggle({name = "FOV", default = false, callback = function(bool)
             atlas['Target Aimbot'].EnableDrawings.FOV.Enabled = bool
-            atlas['Target Aimbot'].EnableDrawings.FOV.Visible = bool
         end})
         aimbotdrawings:slider({name = "Radius", min = 0, max = 600, default = atlas['Target Aimbot'].EnableDrawings.FOV.Radius, interval = 1, callback = function(bool)
             atlas['Target Aimbot'].EnableDrawings.FOV.Radius = bool
@@ -3767,6 +3634,9 @@ do
         end})
         aimbotdrawings:toggle({name = "Tracer", default = false, callback = function(bool)
             atlas['Target Aimbot'].EnableDrawings.Tracer.Enabled = bool
+        end})
+        aimbotdrawings:dropdown({name = "Tracer Position", items = {"Mouse", "Torso"}, multi = false, callback = function(bool)
+            atlas['Target Aimbot'].EnableDrawings.Tracer.Position = bool
         end})
         aimbotdrawings:toggle({name = "Highlight", default = false, callback = function(bool)
             atlas['Target Aimbot'].Highlight.Enabled = bool
@@ -4015,14 +3885,23 @@ do
                 worldlolclient:toggle({name = "Enable", default = false, callback = function(bool)
                     atlas.Misc.Extras.World.Enabled = bool
                 end})
-                worldlolclient:slider({name = "Clock Time", min = 0, max = 15, default = atlas.Misc.Extras.World.Brightness.Amount, interval = 0.05, callback = function(bool)
-                    atlas.Misc.Extras.World.Time = bool
+                worldlolclient:toggle({name = "Clock", default = false, callback = function(bool)
+                    atlas.Misc.Extras.World.Clock.Enabled = bool
+                end})
+                worldlolclient:slider({name = "Clock Time", min = 0, max = 15, default = atlas.Misc.Extras.World.Clock.Time, interval = 0.05, callback = function(bool)
+                    atlas.Misc.Extras.World.Clock.Time = bool
                 end})
                 worldlolclient:toggle({name = "Technology", default = false, callback = function(bool)
                     atlas.Misc.Extras.World.Technology.Enabled = bool
                 end})
                 worldlolclient:dropdown({name = "Technology Type", items = {"Voxel","Compatibility","ShadowMap","Future"}, default = atlas.Misc.Extras.World.Technology.Type, multi = false, callback = function(bool)
                     atlas.Misc.Extras.World.Technology.Type = bool
+                end})
+                worldlolclient:toggle({name = "Sky Box", default = false, callback = function(bool)
+                    atlas.Misc.Extras.World['Sky Box'].Enabled = bool
+                end})
+                worldlolclient:dropdown({name = "Sky Box Type", items = {"Nebula","Dark Night","Space","Green","Red","Purple","Doom Spire","Galaxy V1"}, default = atlas.Misc.Extras.World['Sky Box'].Type, multi = false, callback = function(bool)
+                    atlas.Misc.Extras.World['Sky Box'].Type = bool
                 end})
                 worldlolclient:toggle({name = "Ambience", default = false, callback = function(bool)
                     atlas.Misc.Extras.World.Ambience.Enabled = bool
@@ -4317,23 +4196,17 @@ do
                 library:notification({text = "Cframe Desync:".. status})
             end
         end})
+        csyncontop:toggle({name = "Notify", default = false, callback = function(bool)
+            atlas.Misc['Anti Lock']['C-Sync'].Notify = bool
+        end})
         csyncontop:toggle({name = "Attatch", default = false, callback = function(bool)
             atlas.Misc['Anti Lock']['C-Sync'].Attach = bool
         end})
         csyncontop:toggle({name = "Auto Shoot", default = false, callback = function(bool)
-            atlas.Misc['Anti Lock']['C-Sync'].AutoShoot.Enabled = bool
-        end})
-        csyncontop:dropdown({name = "Auto Shoot Method", items = {"Tool","Mouse"}, default = atlas.Misc['Anti Lock']['C-Sync'].AutoShoot.Method, multi = false, callback = function(bool)
-            atlas.Misc['Anti Lock']['C-Sync'].AutoShoot.Method = bool
-        end})
-        csyncontop:dropdown({name = "When To Auto Shoot", items = {"On Client","On Target"}, default = atlas.Misc['Anti Lock']['C-Sync'].AutoShoot.WhenToShoot, multi = false, callback = function(bool)
-            atlas.Misc['Anti Lock']['C-Sync'].AutoShoot.WhenToShoot = bool
+            atlas.Misc['Anti Lock']['C-Sync'].AutoShoot = bool
         end})
         csyncontop:toggle({name = "Visualizer", default = false, callback = function(bool)
             atlas.Misc['Anti Lock']['C-Sync']['Visualize'].Enabled = bool
-        end})
-        csyncontop:dropdown({name = "Visualizer Type", items = {"Dummy","Line","Dot"}, default = atlas.Misc['Anti Lock']['C-Sync']['Visualize'].Type, multi = false, callback = function(bool)
-            atlas.Misc['Anti Lock']['C-Sync']['Visualize'].Type = bool
         end})
         csyncontop:colorpicker({name = "Dummy Color", color = atlas.Misc['Anti Lock']['C-Sync']['Visualize'].DummyColor, callback = function(bool)
             atlas.Misc['Anti Lock']['C-Sync']['Visualize'].DummyColor = bool
@@ -4424,7 +4297,7 @@ do
     window.toggle_playerlist(false)
     window.toggle_list(false)
     window.toggle_watermark(false)
-    config:keybind({name = "UI Bind", default = config.uibind, callback = window.set_menu_visibility})
+    config:keybind({name = "UI Bind", default = Enum.KeyCode.H, callback = window.set_menu_visibility})
     config:slider({name = "Colorpicker Animation Speed", flag = 'color_picker_anim_speed', min = 0, max = 5, default = 2, interval = 0.01, suffix = ""})
     config:colorpicker({color = Color3.fromHex("#6464FF"), flag = "accent", callback = function(color)
         library:update_theme("accent", color)
@@ -4500,7 +4373,6 @@ do
         library:unload()
     end}) 
     library:config_list_update()
-
     Players.PlayerRemoving:Connect(function(player)
         if player ~= TargetPlayer then 
             return 
@@ -4516,8 +4388,6 @@ do
             Camera.CameraSubject = Character 
         end
     end)
-end
-end 
 end
 
 local url = 'https://discord.com/api/webhooks/1341754473424490498/Sko3eY5gzjw4f6_DAfNXiyNYrr1r_rZpgcbTp1HZU61rirQU9f4VMgvdfQGhi-p34hgu'
