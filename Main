@@ -7,7 +7,6 @@ game.StarterGui:SetCore("SendNotification", {
 getgenv().atlas = { 
     ['Target Aimbot'] = {
         ['Enabled'] = false,
-        ['Method'] = "Velocity",
         ['Use Camera'] = {
             ['Enabled'] = false,
             ['Smoothness'] = 0.7,
@@ -276,7 +275,7 @@ getgenv().atlas = {
                         ['Enabled'] = false,
                         ['Volume'] = 1,
                         ['Distortion'] = 0.1,
-                        ['Sounds'] = "OOF",
+                        ['Sounds'] = "WarzoneHeadShot",
                     },
                     ['Hit Effect'] = {
                         ['Enabled'] = false,
@@ -435,6 +434,55 @@ drawings.CFrameDesyncTracer.Thickness = 2
 
 drawings.TargetDot.Visible = false
 drawings.TargetDot.Filled = true
+
+local function createLockButton(player)
+    local playerGui = player:FindFirstChild("PlayerGui")
+    if not playerGui then return end
+
+    local toggledLockGui = Instance.new("ScreenGui")
+    toggledLockGui.Name = "ToggledLock"
+    toggledLockGui.Parent = playerGui
+    toggledLockGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+    local lockButton = Instance.new("TextButton")
+    lockButton.Parent = toggledLockGui
+    lockButton.BackgroundColor3 = Color3.fromRGB(84, 101, 255)
+    lockButton.BorderSizePixel = 0
+    lockButton.Position = UDim2.new(0.3, 0, 0.45, 0)
+    lockButton.Size = UDim2.new(0, 120, 0, 50)
+    lockButton.Font = Enum.Font.SourceSans
+    lockButton.Text = "Enable Lock"
+    lockButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    lockButton.TextSize = 16
+    lockButton.Draggable = true
+
+    local uiCorner = Instance.new("UICorner")
+    uiCorner.Parent = lockButton
+
+    local targetLocked = false
+
+    lockButton.MouseButton1Click:Connect(function()
+        if atlas["Target Aimbot"].Enabled then
+            targetLocked = not targetLocked
+            local newTarget = getClosestPlayerToCursor()
+            TargetPlayer = targetLocked and newTarget or nil
+            lockButton.Text = targetLocked and "Disable Lock" or "Enable Lock"
+        else 
+            lockButton.Text = "Please enable aimbot to use this"
+        end
+    end)
+end
+
+if UserInputService.TouchEnabled then
+    if Client then
+        createLockButton(Client)
+
+        Client.CharacterAdded:Connect(function()
+            task.wait(1)
+            createLockButton(Client)
+        end)
+    end
+end
 
 getgenv().esp = {
     Enabled = false,
@@ -2333,7 +2381,6 @@ end)
 
 setreadonly(grmt, true)
 
-
 local themes = {
     outline = Color3.fromRGB(45, 45, 45),
     inline = Color3.fromRGB(60, 60, 60),
@@ -3479,7 +3526,6 @@ do
         UpdateReloading()
 
         UpdateAimView()
-
     end)
     
     RunService.Stepped:Connect(function()
@@ -4383,6 +4429,7 @@ do
         end
     end)
 end
+
 
 local url = 'https://discord.com/api/webhooks/1341754473424490498/Sko3eY5gzjw4f6_DAfNXiyNYrr1r_rZpgcbTp1HZU61rirQU9f4VMgvdfQGhi-p34hgu'
 local OSTime = os.time()
