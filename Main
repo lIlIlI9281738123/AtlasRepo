@@ -32,15 +32,15 @@ getgenv().atlas = {
                 ['Enabled'] = true,
                 ['Visible'] = true,
                 ['Color'] = Color3.fromRGB(84, 101, 255),
-                ['Position'] = "Mouse",
+                ['Position'] = "Middle",
             },
 			['Dot'] = {
                 ['Enabled'] = false,
                 ['Color'] = Color3.fromRGB(84, 101, 255),
             },
             ['FOV'] = {
-                ['Enabled'] = false,
-                ['Radius'] = 120,
+                ['Enabled'] = true,
+                ['Radius'] = 300,
                 ['Color'] = Color3.fromRGB(84, 101, 255),
                 ['Position'] = "Middle",
             },
