@@ -3557,7 +3557,7 @@ local function createToggleButton(player)
     TextButton.Draggable = true
     UICorner.Parent = TextButton
 
-    local toggle = false
+    local toggle = true
     TextButton.MouseButton1Down:Connect(function()
         toggle = not toggle
         window.set_menu_visibility(toggle)
