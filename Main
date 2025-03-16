@@ -13,7 +13,8 @@ getgenv().atlas = {
         },
         ['Keybind'] = "",
         ['Prediction'] = {
-            ['Amount'] = 0.167791,
+            ['Amount'] = 0.139487,
+            ['ShowLabel'] = false,
             ['Auto Prediction'] = {
                 ['Enabled'] = false,
                 ['Mode'] = "Default",
@@ -22,11 +23,14 @@ getgenv().atlas = {
         ['AimPart'] = 'HumanoidRootPart',
         ['View'] = false,
         ['Notify'] = false,
-        ['ForceHit'] = false,
+        ['LookAt'] = false,
+        ['Force Hit'] = {
+            ['Enabled'] = false,
+        },
 		['EnableDrawings'] = {
 			['Tracer'] = {
-                ['Enabled'] = false,
-                ['Visible'] = false,
+                ['Enabled'] = true,
+                ['Visible'] = true,
                 ['Color'] = Color3.fromRGB(84, 101, 255),
                 ['Position'] = "Mouse",
             },
@@ -38,6 +42,7 @@ getgenv().atlas = {
                 ['Enabled'] = false,
                 ['Radius'] = 120,
                 ['Color'] = Color3.fromRGB(84, 101, 255),
+                ['Position'] = "Middle",
             },
             ['UI'] = {
                 ['Enabled'] = false,
@@ -70,7 +75,8 @@ getgenv().atlas = {
             ['Notify'] = false
         },
         ['Target Strafe'] = {
-            ['Enabled'] = false,
+            ['Enabled'] = false,    
+            ['AutoShoot'] = false,
 			['Mode'] = "Normal",
 			['Sky Distance'] = 15.2,
             ['Distance'] = 15,
@@ -134,7 +140,11 @@ getgenv().atlas = {
         ['Movement Speed'] = {
             ['Enabled'] = false,
             ['UseSpeed'] = false,
-            ['UseFly'] = false,
+            ['UseFly'] = {
+                ['Enabled'] = false,
+                ['Speed'] = 400,
+                ['SpoofedState'] = "Seated",
+            },
             ['CFrameSpeed'] = 1.3,
             ['FlySpeed'] = 100,
         },
@@ -144,8 +154,11 @@ getgenv().atlas = {
                 ['Notify'] = false,
                 ['Unhittable'] = false,
                 ['Multiplier'] = false,
-                ['Mouse Control'] = false,
                 ['ShowVisualizer'] = false,
+                ['CripWalk'] = {
+                    ['Enabled'] = false,
+                    ['Tick'] = 1,
+                },
                 ['PredictionBreaker'] = {
                     ['Enabled'] = false,
                     ['UsePreset'] = false,
@@ -155,10 +168,6 @@ getgenv().atlas = {
                         ['Y'] = 0,
                         ['Z'] = 0
                     },
-                },
-                ['CripWalk'] = {
-                    ['Enabled'] = false,
-                    ['Tick'] = 1,
                 },
             },
             ['C-Sync'] = { 
@@ -194,6 +203,7 @@ getgenv().atlas = {
             ['AmmoAmount'] = 3,
             ['AutoArmor'] = {
                 ['Enabled'] = false,
+                ['ReturnBackDelay'] = 0.1,
                 ['BuyOn'] = 85
             },
         },
@@ -294,17 +304,6 @@ getgenv().atlas = {
     },
 }
 
---[[if game:GetService("UserInputService").TouchEnabled then 
-    repo = 'https://raw.githubusercontent.com/LionTheGreatRealFrFr/MobileLinoriaLib/main/'
-    Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
-    ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))()
-    SaveManager = loadstring(game:HttpGet(repo .. 'addons/SaveManager.lua'))()
-else
-    Library = loadstring(game:HttpGet('https://raw.githubusercontent.com/VaxKs/gfe/main/CustomLinoria'))()
-    ThemeManager = loadstring(game:HttpGet('https://raw.githubusercontent.com/DetainedMonkey2891/ThemeManager/refs/heads/main/Maina'))()
-    SaveManager = loadstring(game:HttpGet('https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/refs/heads/main/addons/SaveManager.lua'))()
-end--]]
-
 --local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/i77lhm/vaderpaste/refs/heads/main/library.lua"))() 
 local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/DetainedMonkey2891/vaderpasteui/refs/heads/main/vader"))() 
 local Players = game:GetService("Players")
@@ -374,7 +373,8 @@ local Assets = {
         lastExecutionTime = 0,
         Functions = {},
         Drawings = {},
-        lastrender = 0
+        lastrender = 0,
+        SavedPrediction = atlas['Target Aimbot'].Prediction.Amount
     },
     BlacklistedGames = {
         { Name = "Da Hood", ID = 2788229376 },
@@ -924,13 +924,19 @@ Players.PlayerAdded:Connect(function(newplr)
 end)
 
 local function UpdateFOVCircle()
-    if atlas['Target Aimbot'].EnableDrawings.FOV.Enabled then
+    local fovconfig = atlas['Target Aimbot'].EnableDrawings.FOV
+    if fovconfig.Enabled then
         drawings.FOVCircle.Visible = true
-        drawings.FOVCircle.Color = atlas['Target Aimbot'].EnableDrawings.FOV.Color
-        drawings.FOVCircle.Radius = atlas['Target Aimbot'].EnableDrawings.FOV.Radius
+        drawings.FOVCircle.Color = fovconfig.Color
+        drawings.FOVCircle.Radius = fovconfig.Radius
 
         local fovPosition = UserInputService:GetMouseLocation()
-        drawings.FOVCircle.Position = Vector2.new(fovPosition.X, fovPosition.Y)
+        local screenSize = Camera.ViewportSize
+        if fovconfig.Position == "Mouse" then
+            drawings.FOVCircle.Position = Vector2.new(fovPosition.X, fovPosition.Y)
+        elseif fovconfig.Position == "Middle" then 
+            drawings.FOVCircle.Position = Vector2.new(screenSize.X / 2, screenSize.Y / 2)
+        end
     else
         drawings.FOVCircle.Visible = false
     end
@@ -958,38 +964,43 @@ local function getClosestPlayerToCursor()
     local closestDist = drawings.FOVCircle.Radius
     local closestPlr = nil
     
-    local mousePos = Vector2.new(Mouse.X, Mouse.Y)
+    local mousePos
+    if atlas['Target Aimbot'].EnableDrawings.FOV.Position == "Mouse" then
+        mousePos = Vector2.new(Mouse.X, Mouse.Y)
+    elseif atlas['Target Aimbot'].EnableDrawings.FOV.Position == "Middle" then
+        local viewportSize = Camera.ViewportSize
+        mousePos = Vector2.new(viewportSize.X / 2, viewportSize.Y / 2)
+    end
     
     for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= Client and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local humanoidRootPart = player.Character.HumanoidRootPart
-            local screenPos, onScreen = Camera:WorldToViewportPoint(humanoidRootPart.Position)
+        if player ~= Client and player.Character then
+            local targetHumanoidRoot = player.Character:FindFirstChild("HumanoidRootPart")
+            if targetHumanoidRoot then
+                local screenPos, onScreen = Camera:WorldToViewportPoint(targetHumanoidRoot.Position)
+                if onScreen then
+                    local distToMouse = (mousePos - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
 
-            if onScreen then
-                local distToMouse = (mousePos - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
-
-                if atlas["Target Aimbot"].Checks.Visible and not RayCastCheck(humanoidRootPart, player.Character) then
-                    continue
-                end
-
-                if atlas["Target Aimbot"].Checks.Grabbed and player.Character:FindFirstChild("BodyEffects") then
-                    local GC 
-                    if player.Character.BodyEffects:FindFirstChild("GRABBING_CONSTRAINT") then 
-                        GC = player.Character.BodyEffects:FindFirstChild("GRABBING_CONSTRAINT").Value
-                    end
-                    
-                    if GC then
+                    if atlas["Target Aimbot"].Checks.Visible and not RayCastCheck(targetHumanoidRoot, player.Character) then
                         continue
                     end
-                end
-
-                if distToMouse < closestDist then
-                    closestPlr = player
-                    closestDist = distToMouse
+                    
+                    if targetHumanoidRoot.Velocity.Y < 0 then
+                        targetHumanoidRoot.Velocity = Vector3.new(targetHumanoidRoot.Velocity.X, 0, targetHumanoidRoot.Velocity.Z) * 0.36
+                    end
+                    
+                    if atlas["Target Aimbot"].Checks.Grabbed and player.Character:FindFirstChild("BodyEffects") and player.Character.BodyEffects:FindFirstChild("GRABBING_CONSTRAINT") then
+                        continue
+                    end
+                    
+                    if distToMouse < closestDist then
+                        closestPlr = player
+                        closestDist = distToMouse
+                    end
                 end
             end
         end
     end
+    
     return closestPlr
 end
 
@@ -1059,7 +1070,7 @@ local function KnockedCheckedLOL()
                 TargetPlayer = nil
                 TargetL = nil
                 if atlas["Target Aimbot"].Checks.KO.Notify then 
-                    Library:Notify("Unlocked Because Target Was Knocked", 3)            
+                    library:notification({text = "Unlocked Because Target Was Knocked"})         
                 end
             else 
                 return
@@ -1077,7 +1088,7 @@ local function KnockedCheckedLOL()
                     TargetPlayer = nil
                     TargetL = nil
                     if atlas["Target Aimbot"].Checks.KO.Notify then 
-                        Library:Notify("Unlocked Because Target Was Knocked", 3)            
+                        library:notification({text = "Unlocked Because Target Was Knocked"})         
                     end
                 end
             end
@@ -1091,6 +1102,21 @@ task.spawn(function()
         KnockedCheckedLOL()
     end
 end)
+
+local function UpdateLookAt()
+    if atlas['Target Aimbot'].Enabled and atlas['Target Aimbot'].LookAt and TargetPlayer and TargetPlayer.Character then
+        local targetCharacter = TargetPlayer.Character
+        local targetHumanoidRootPart = targetCharacter:FindFirstChild("HumanoidRootPart")
+        local targetHumanoid = targetCharacter:FindFirstChild("Humanoid")
+
+        if targetHumanoid and targetHumanoidRootPart then
+            humanoid.AutoRotate = false
+            humanoidRootPart.CFrame = CFrame.new(humanoidRootPart.CFrame.Position,Vector3.new(targetHumanoidRootPart.Position.X, humanoidRootPart.CFrame.Position.Y, targetHumanoidRootPart.Position.Z))
+        end
+    else
+        humanoid.AutoRotate = true
+    end 
+end
 
 RecalculateLOL = function(obj, delta)
     if obj.Character:FindFirstChild("HumanoidRootPart") then
@@ -1160,10 +1186,9 @@ local function UpdateSpectate()
     if atlas['Target Aimbot'].View and TargetPlayer then
         Camera.CameraSubject = TargetPlayer.Character
     else
-        Camera.CameraSubject = Character:WaitForChild("Humanoid")
+        Camera.CameraSubject = Character:FindFirstChild("Humanoid")
     end
 end
-
 
 local function UpdateDotAndTracerAndHighlight()
     if not TargetPlayer or not TargetPlayer.Character then
@@ -2010,17 +2035,23 @@ end
 Client.CharacterAdded:Connect(onCharacterAdded)
 
 local function UpdateAutoShootCSYNC()
-        if not Character then return end
+    local tool = Character:FindFirstChildWhichIsA("Tool")
+    local config = atlas.Misc['Anti Lock']['C-Sync']
 
-        local tool = Character:FindFirstChildWhichIsA("Tool")
-        local config = atlas.Misc['Anti Lock']['C-Sync']
-
-        if not config.Enabled or not config.AutoShoot then return end
-
-        if tool then
-            tool:Activate()
-        end
+    if tool and TargetPlayer and config.Enabled and config.AutoShoot then
+        tool:Activate()
     end
+end
+
+local function UpdateAutoShootStrafe()
+    local tool = Character:FindFirstChildWhichIsA("Tool")
+    local config = atlas['Target Aimbot']['Target Strafe']
+
+    if tool and TargetPlayer and config.Enabled and config.AutoShoot then
+        tool:Activate()
+    end
+end
+
 
 local function updateShootSound2()
     if not atlas.Misc.Extras.DisableShootSounds then return end
@@ -2254,82 +2285,69 @@ local function UpdateVelocitySpoofing()
     end
 end
 
-local clearTable = function(tab)
-    table.clear(tab) 
+local isAlive = function(player)
+    return (player and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character:FindFirstChild("HumanoidRootPart")) and true or false
 end
 
-local function UpdateVelocitySpoofing2()
-    local vs = atlas.Misc['Anti Lock']['Velocity Spoofer']
-    if vs.PredictionBreaker.Enabled and vs.Enabled then
-        if Character then
-            local velocityAmount = 1
-            local velocityDirection = false
-            local fakeVelocity = Vector3.new(vs.PredictionBreaker.Velocity.X, vs.PredictionBreaker.Velocity.Y, vs.PredictionBreaker.Velocity.Z)
-            local realVelocity = Character["HumanoidRootPart"].Velocity
+local isAlive = function(player)
+    return player and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character:FindFirstChild("HumanoidRootPart")
+end
 
-            for _, part in next, Character:GetChildren() do
-                if part and part:IsA("BasePart") then 
-                    Assets.OtherStored.VelocityShit[part] = part.Velocity
-                    part.Velocity = fakeVelocity
-                end
-            end
+RunService.Heartbeat:Connect(function()
+    local PredictionB = atlas.Misc['Anti Lock']['Velocity Spoofer'].PredictionBreaker
+    if PredictionB.Enabled then 
+        if isAlive(Client) then
+            oldvel = humanoidRootPart.Velocity
 
-            RunService.RenderStepped:Wait()
-
-            for _, part in next, Character:GetChildren() do
-                if part and part:IsA("BasePart") then 
-                    part.Velocity = Assets.OtherStored.VelocityShit[part]
-                end
-            end
-            
-            clearTable(Assets.OtherStored.VelocityShit)
-            clearTable(Assets.OtherStored.VelocityCFrame)
-
-            if vs.PredictionBreaker.UsePreset == true then
-                if vs.PredictionBreaker.Method == "Random" then
-                    vs.PredictionBreaker.Velocity.X = math.random(-6000, 6000)
-                    vs.PredictionBreaker.Velocity.Y = math.random(0, 6000)
-                    vs.PredictionBreaker.Velocity.Z = math.random(-6000, 6000)
-                elseif vs.PredictionBreaker.Method == "Fluctuate" then 
-                    if vs.PredictionBreaker.Velocity.X >= 6000 then
-                        velocityDirection = true
-                    elseif vs.PredictionBreaker.Velocity.X <= -6000 then
-                        velocityDirection = false
+            if not PredictionB.UsePreset then
+                PredictionB.Velocity = PredictionB.Velocity or Vector3.new(0, 0, 0)
+            else
+                if PredictionB.Method == "Random" then
+                    PredictionB.Velocity = Vector3.new(
+                        math.random(-6000, 6000),
+                        math.random(0, 6000),
+                        math.random(-6000, 6000)
+                    )
+                elseif PredictionB.Method == "Fluctuate" then
+                    if PredictionB.Velocity.X >= 6000 then
+                        desyncVelocityDirection = true
+                    elseif PredictionB.Velocity.X <= -6000 then
+                        desyncVelocityDirection = false
                     end
-                    vs.PredictionBreaker.Velocity.X = velocityAmount
-                    vs.PredictionBreaker.Velocity.Y = velocityAmount
-                    vs.PredictionBreaker.Velocity.Z = velocityAmount
 
-                    if velocityDirection then
-                        velocityAmount -= 1
+                    local xVelAmt = desyncVelocityAmount >= 0 and 0 or desyncVelocityAmount
+                    PredictionB.Velocity = Vector3.new(
+                        desyncVelocityAmount,
+                        xVelAmt,
+                        desyncVelocityAmount
+                    )
+
+                    if desyncVelocityDirection then
+                        desyncVelocityAmount -= 1
                     else
-                        velocityAmount += 1
+                        desyncVelocityAmount += 1
                     end
-                end 
-                
-            else 
-                vs.PredictionBreaker.Velocity.Y = math.random(150, 6000)
+
+                elseif PredictionB.Method == "Switch" then
+                    if desyncVelocityDirection then
+                        desyncVelocityDirection = false
+                        PredictionB.Velocity = Vector3.new(1000, 0, 1000)
+                    else
+                        PredictionB.Velocity = Vector3.new(-1000, 0, -1000)
+                        desyncVelocityDirection = true
+                    end
+                else
+                    PredictionB.Velocity = Vector3.zero
+                end
             end
-        end
-    end
-    
-    RunService.Heartbeat:Wait()
-end
 
---[spawn(function()
-    --[[while true do
-        task.wait() 
-        local vs = atlas.Misc['Anti Lock']['Velocity Spoofer']
-        if vs.CripWalk.Enabled then
-            local Value = vs.CripWalk.Tick
-            setfflag("S2PhysicsSenderRate", tostring(Value))
-
+            humanoidRootPart.Velocity = PredictionB.Velocity
+            humanoidRootPart.CFrame = humanoidRootPart.CFrame * CFrame.Angles(0, 0.0001, 0)
             RunService.RenderStepped:Wait()
-        else
-            setfflag("S2PhysicsSenderRate", tostring(152))
+            humanoidRootPart.Velocity = oldvel
         end
-    end
-end)--]]
+    end 
+end)
 
 local originalCFrame
 originalCFrame = hookmetamethod(game, "__index", newcclosure(function(self, key)
@@ -2631,13 +2649,17 @@ distanceText.Text = "0 m"
 distanceText.Parent = background
 
 local function updateTargetInfo(TargetPlayer)
-    local humanoid = TargetPlayer.Character:FindFirstChild("Humanoid")
+    local humanoid = TargetPlayer and TargetPlayer.Character:FindFirstChild("Humanoid")
+
+    if not humanoid then return end
     
     playerAvatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. TargetPlayer.UserId .. "&w=420&h=420"
     playerName.Text = TargetPlayer.DisplayName .. " (@" .. TargetPlayer.Name .. ")"
     
     local health = humanoid.Health
+    if not health then return end
     local maxHealth = humanoid.MaxHealth
+    if not maxHealth then return end
 
     healthBar.Size = UDim2.new(math.clamp(health / maxHealth, 0, 1), 0, 1, 0)
     healthText.Text = math.floor(health) .. "/" .. math.floor(maxHealth)
@@ -2770,27 +2792,24 @@ local function UpdateReloading()
     end
 end
 
-task.spawn(function()
-    while true do
-        task.wait() 
-        if TargetPlayer and TargetPlayer.Character then
-            local sex = TargetPlayer.Character
-            local aimbotSettings = atlas['Target Aimbot']
-            local sex2 = sex:WaitForChild("HumanoidRootPart")
+local function UpdateUseCamera()
+    if TargetPlayer and TargetPlayer.Character then
+        local sex = TargetPlayer.Character
+        local aimbotSettings = atlas['Target Aimbot']
+        local sex2 = sex:FindFirstChild("HumanoidRootPart")
         
-            if sex2 and aimbotSettings.Enabled and aimbotSettings['Use Camera'].Enabled then
-                local aimPosition = sex:FindFirstChild(aimbotSettings.AimPart) and sex[aimbotSettings.AimPart].Position
-                local velocity = sex2 and sex2.Velocity or Vector3.zero
-                local predictedPosition = aimPosition and (aimPosition + (velocity * aimbotSettings.Prediction.Amount))
+        if sex2 and aimbotSettings.Enabled and aimbotSettings['Use Camera'].Enabled then
+            local aimPosition = sex:FindFirstChild(aimbotSettings.AimPart) and sex[aimbotSettings.AimPart].Position
+            local velocity = sex2 and sex2.Velocity
+            local predictedPosition = aimPosition and (aimPosition + (velocity * aimbotSettings.Prediction.Amount))
 
-                if aimPosition and predictedPosition then
-                    local mainCFrame = CFrame.new(Camera.CFrame.Position, predictedPosition)
-                    Camera.CFrame = Camera.CFrame:Lerp(mainCFrame, aimbotSettings['Use Camera'].Smoothness, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-                end
+            if aimPosition and predictedPosition then
+                local mainCFrame = CFrame.new(Camera.CFrame.Position, predictedPosition)
+                Camera.CFrame = Camera.CFrame:Lerp(mainCFrame, aimbotSettings['Use Camera'].Smoothness, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
             end
         end
     end
-end)
+end
 
 local function UpdateSlow()
     if not (atlas.Misc['Anti Slow']) then
@@ -3055,9 +3074,9 @@ local function AutoBuyArmor()
 
                     if armorItem and armorItem:FindFirstChild("Head") and armorItem:FindFirstChild("ClickDetector") then
                         humanoidRootPart.CFrame = armorItem.Head.CFrame
-                        task.wait(0.01)
+                        task.wait(0.1)
                         fireclickdetector(armorItem.ClickDetector)
-                        task.wait(0.01)
+                        task.wait(atlas.Misc.AutoBuy.AutoArmor.ReturnBackDelay)
                         humanoidRootPart.CFrame = OldPosition
                         break
                     end
@@ -3088,33 +3107,61 @@ RunService.Stepped:Connect(function()
     end
 end)
 
-RunService.Stepped:Connect(function()
+local function updateHumanoid()
+    humanoid = character:WaitForChild("Humanoid")
+end
+
+Client.CharacterAdded:Connect(function(character)
+    updateHumanoid()
+
+    humanoid.Died:Connect(function()
+        wait(1)  
+        updateHumanoid()
+    end)
+end)
+
+RunService.Heartbeat:Connect(function()
     local movementConfig = atlas.Misc['Movement Speed']
 
-    if movementConfig.UseFly and movementConfig.Enabled then
+    if movementConfig.UseFly.Enabled and movementConfig.Enabled then
         spawn(function()
             pcall(function()
                 local velocity = Vector3.new(0, 1, 0)
                 if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-                    velocity = velocity + (Camera.CoordinateFrame.lookVector * movementConfig.FlySpeed)
+                    velocity = velocity + (Camera.CoordinateFrame.lookVector * movementConfig.UseFly.Speed)
                 end
                 if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-                    velocity = velocity + (Camera.CoordinateFrame.rightVector * -movementConfig.FlySpeed)
+                    velocity = velocity + (Camera.CoordinateFrame.rightVector * -movementConfig.UseFly.Speed)
                 end
                 if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-                    velocity = velocity + (Camera.CoordinateFrame.lookVector * -movementConfig.FlySpeed)
+                    velocity = velocity + (Camera.CoordinateFrame.lookVector * -movementConfig.UseFly.Speed)
                 end
                 if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-                    velocity = velocity + (Camera.CoordinateFrame.rightVector * movementConfig.FlySpeed)
+                    velocity = velocity + (Camera.CoordinateFrame.rightVector * movementConfig.UseFly.Speed)
                 end
                 humanoidRootPart.Velocity = velocity
-                humanoid:ChangeState("Freefall")
+                
+                if movementConfig.UseFly.SpoofedState == "Seated" then 
+                    humanoid:ChangeState("Seated")
+                elseif movementConfig.UseFly.SpoofedState == "Standing" then 
+                    humanoid:ChangeState("Standing")
+                elseif movementConfig.UseFly.SpoofedState == "Freefall" then 
+                    humanoid:ChangeState("Freefall")
+                elseif movementConfig.UseFly.SpoofedState == "Climbing" then 
+                    humanoid:ChangeState("Climbing")
+                elseif movementConfig.UseFly.SpoofedState == "Platform Standing" then 
+                    humanoid:ChangeState("PlatformStanding")
+                elseif movementConfig.UseFly.SpoofedState == "Running" then 
+                    humanoid:ChangeState("Running")
+                elseif movementConfig.UseFly.SpoofedState == "Swimming" then 
+                    humanoid:ChangeState("Swimming")
+                end
             end)
         end)
-    elseif not Client == nil then
+    elseif Client == nil or not movementConfig.UseFly.Enabled or movementConfig.Enabled then
         humanoid:ChangeState("Landing")
     end
-end) 
+end)
 
 local function updateLighting()
     if atlas.Misc.Extras.World.Enabled then
@@ -3384,36 +3431,84 @@ Pred.Font = 3
 Pred.Position = Vector2.new(20, 260)
 Pred.ZIndex = 1500
 
+updatePredictionValue = function()
+    local config = atlas['Target Aimbot'].Prediction["Auto Prediction"]
+    if config.Enabled then
+        local ping = tonumber(ServerStatsItem:GetValueString():split(".")[1])
 
-updatePredictionValue = function() 
-    if atlas['Target Aimbot'].Prediction["Auto Prediction"].Enabled and atlas['Target Aimbot'].Prediction["Auto Prediction"].Enabled then 
-        local PingStats = ServerStatsItem:GetValueString()
-        local Value = tostring(PingStats)
-        local PingValue = Value:split(" ")
-        local PingNumber = tonumber(PingValue[1])
-
-        if atlas['Target Aimbot'].Prediction["Auto Prediction"]["Mode"] == "Default" then 
-            atlas['Target Aimbot'].Prediction.Amount = tonumber(PingNumber / 230 * 0.1 + 0.2)
-        elseif atlas['Target Aimbot'].Prediction["Auto Prediction"]["Mode"] == "Old" then 
-            if PingNumber < 140 then
-                atlas['Target Aimbot'].Prediction.Amount = tonumber(PingNumber / 1000 + 0.2)
+        if config.Mode == "Default" then
+            atlas['Target Aimbot'].Prediction.Amount = tonumber(ping / 1000 * 0.5 + 0.1)
+        elseif config.Mode == "V2" then
+            atlas['Target Aimbot'].Prediction.Amount = tonumber(0.1 + (ping / 2000) + ((ping / 1000) * (ping / 1500) * 1.2))
+        elseif config.Mode == "Old" then
+            if ping < 130 then
+                atlas['Target Aimbot'].Prediction.Amount = tonumber(ping / 1000 + 0.1)
             else
-                atlas['Target Aimbot'].Prediction.Amount = (PingNumber / 1000 + 0.076)
+                atlas['Target Aimbot'].Prediction.Amount = tonumber(ping / 1000 + 0.033)
             end
-        elseif atlas['Target Aimbot'].Prediction["Auto Prediction"]["Mode"] == "V2" then 
-            atlas['Target Aimbot'].Prediction.Amount = tonumber(0.1 + (PingNumber / 2000) + ((PingNumber / 1000) * (PingNumber / 1500) * 1.4))
-
-        elseif atlas['Target Aimbot'].Prediction["Auto Prediction"]["Mode"] == "Hood Customs" then 
-            atlas['Target Aimbot'].Prediction.Amount = tonumber(0.01 + (PingNumber / 2000) + ((PingNumber / 1000) * (PingNumber / 1500) * 0.01))
+        elseif config.Mode == "V3" then
+            atlas['Target Aimbot'].Prediction.Amount = tonumber(ping / 1000 + 0.1 * 0.1)
+        elseif config.Mode == "V4" then
+            atlas['Target Aimbot'].Prediction.Amount = tonumber(ping / 1000 + 0.1 + 0.011)
         end
     end
 end
-
 
 local function UpdatePrediction()
     local settings = atlas['Target Aimbot']
     local PredictionValue = settings.Prediction.Amount
     PredictionValue = updatePredictionValue()
+    if settings.Prediction.ShowLabel then 
+        Pred.Visible = true 
+        Pred.Text = "Prediction: " ..settings.Prediction.Amount
+    else
+        Pred.Visible = false
+    end
+    if not settings.Prediction['Auto Prediction'].Enabled then
+        settings.Prediction.Amount = Assets.OtherStored.SavedPrediction       
+    end
+end
+
+local function UpdateForceHitting()
+    if atlas['Target Aimbot']['Force Hit'].Enabled then
+        if TargetPlayer and TargetPlayer.Character then
+            local a = atlas['Target Aimbot'].AimPart
+            local b = TargetPlayer.Character:FindFirstChild(a)
+            local c = TargetPlayer.Character:FindFirstChild("HumanoidRootPart")
+
+            if a and b and c then
+                local CurrentPosition = humanoidRootPart.Position
+                local ShootDirection = humanoidRootPart.CFrame.LookVector
+                local ShootPosition = CurrentPosition + ShootDirection * 10
+                local Normal = ShootDirection.unit
+                local Offset = Normal * 0.04742
+
+                local Args = {
+                    [1] = "Shoot",
+                    [2] = {
+                        [1] = {
+                            [1] = {
+                                ["Instance"] = c,
+                                ["Normal"] = Normal,
+                                ["Position"] = CurrentPosition
+                            }
+                        },
+                        [2] = {
+                            [1] = {
+                                ["thePart"] = c,
+                                ["theOffset"] = CFrame.new(Offset)
+                            }
+                        },
+                        [3] = ShootPosition,
+                        [4] = CurrentPosition,
+                        [5] = tick()
+                    }
+                }
+
+                ReplicatedStorage:WaitForChild("MainEvent"):FireServer(unpack(Args))
+            end
+        end
+    end
 end
 
 local function autoselectplayerbruh()
@@ -3422,6 +3517,18 @@ local function autoselectplayerbruh()
         if atlas['Target Aimbot'].Highlight.Enabled and TargetPlayer then 
             LocalHL.Parent = TargetPlayer.Character
         end  
+        if atlas['Target Aimbot'].Enabled and atlas['Target Aimbot'].LookAt and TargetPlayer and TargetPlayer.Character then
+            local targetCharacter = TargetPlayer.Character
+            local targetHumanoidRootPart = targetCharacter:FindFirstChild("HumanoidRootPart")
+            local targetHumanoid = targetCharacter:FindFirstChild("Humanoid")
+    
+            if targetHumanoid and targetHumanoidRootPart then
+                humanoid.AutoRotate = false
+                humanoidRootPart.CFrame = CFrame.new(humanoidRootPart.CFrame.Position,Vector3.new(targetHumanoidRootPart.Position.X, humanoidRootPart.CFrame.Position.Y, targetHumanoidRootPart.Position.Z))
+            end
+        else
+            humanoid.AutoRotate = true
+        end 
     elseif not atlas['Target Aimbot']['Auto Select'].Enabled then
         TargetL = nil
     end
@@ -3449,7 +3556,6 @@ end
 local function UpdateCheck()
     if isBlacklisted(game.PlaceId) then
         library:notification({text = "Unsupported Game"})
-        config.uienabled, config.autoshow, config.uibind = nil, nil, nil
         task.wait(1)
         Client:Kick("")
     end
@@ -3475,15 +3581,19 @@ do
 
         ThirdPerson()
 
-        UpdatePrediction()
-
         UpdateAnimationNone()
 
         UpdateVelocitySpoofing()
 
-        UpdateVelocitySpoofing2()
-
         UpdateTrail()
+
+        UpdateAimView()
+
+        UpdateForceHitting()
+
+        UpdateJumpCoolD()
+        
+        UpdatePrediction()
     end)
     
     RunService.RenderStepped:Connect(function()
@@ -3499,7 +3609,11 @@ do
 
         UpdateReloading()
 
-        UpdateAimView()
+        UpdateAutoShootCSYNC()
+
+        UpdateAutoShootStrafe()
+
+        --UpdateCripWalk()
     end)
     
     RunService.Stepped:Connect(function()
@@ -3511,11 +3625,11 @@ do
 
         UpdateSelf()
         
-        UpdateJumpCoolD()
-
-        UpdateAutoShootCSYNC()
-
         UpdateCrosshair()
+
+        UpdateLookAt()
+
+        UpdateUseCamera()
     end)    
 end
 
@@ -3529,9 +3643,6 @@ local window = library:window({
     size = UDim2.fromOffset(722, 500) 
 }) 
 
-local aiming = window:tab({name = "Aiming"})
-local visuals = window:tab({name = "Visuals"})
-local misc = window:tab({name = "Misc"})
 
 local function createToggleButton(player)
     local PlayerGui = player:FindFirstChild("PlayerGui")
@@ -3557,7 +3668,7 @@ local function createToggleButton(player)
     TextButton.Draggable = true
     UICorner.Parent = TextButton
 
-    local toggle = true
+    local toggle = false
     TextButton.MouseButton1Down:Connect(function()
         toggle = not toggle
         window.set_menu_visibility(toggle)
@@ -3579,6 +3690,10 @@ if UserInputService.TouchEnabled then
         end)
     end
 end
+
+local aiming = window:tab({name = "Aiming"})
+local visuals = window:tab({name = "Visuals"})
+local misc = window:tab({name = "Misc"})
 
 do
     local masterswitchaim = aiming:section({name = "Rage"}) do
@@ -3615,18 +3730,31 @@ do
         masterswitchaim:toggle({name = "Spectate", default = false, callback = function(bool)
             atlas['Target Aimbot'].View = bool
         end})
+        masterswitchaim:toggle({name = "Look At", default = false, callback = function(bool)
+            atlas['Target Aimbot'].LookAt = bool
+        end})
     end
-
     local pred = aiming:section({name = "Prediction", side = "left"}) do
+        pred:toggle({name = "Show Prediction Label", default = false, callback = function(bool)
+            atlas['Target Aimbot'].Prediction.ShowLabel = bool
+        end})
         pred:toggle({name = "Auto Prediction", default = false, callback = function(bool)
             atlas['Target Aimbot'].Prediction['Auto Prediction'].Enabled = bool
         end})
-        pred:dropdown({name = "Auto Prediction Mode", items = {"Default","Old","V2","Hood Customs"}, multi = false, callback = function(bool)
+        pred:dropdown({name = "Auto Prediction Mode", items = {"Default","Old","V2","V3","V4"}, multi = false, callback = function(bool)
             atlas['Target Aimbot'].Prediction['Auto Prediction'].Mode = bool
         end})
         pred:textbox({default = atlas['Target Aimbot'].Prediction.Amount, callback = function(bool)
             atlas['Target Aimbot'].Prediction.Amount = bool
         end})
+    end
+
+    if game.PlaceId == 9825515356 then 
+        local epichackz = aiming:section({name = "Epic Hackz", side = "left"}) do
+            epichackz:toggle({name = "Force Hit", default = false, callback = function(bool)
+                atlas['Target Aimbot']['Force Hit'].Enabled = bool
+            end})
+        end
     end
 
     local targetuilol = aiming:section({name = "Target UI", side = "left"}) do
@@ -3687,6 +3815,9 @@ do
         aimbotdrawings:toggle({name = "FOV", default = false, callback = function(bool)
             atlas['Target Aimbot'].EnableDrawings.FOV.Enabled = bool
         end})
+        aimbotdrawings:dropdown({name = "FOV Position", items = {"Mouse", "Middle"}, default = atlas['Target Aimbot'].EnableDrawings.FOV.Position, multi = false, callback = function(bool)
+            atlas['Target Aimbot'].EnableDrawings.FOV.Position = bool
+        end})
         aimbotdrawings:slider({name = "Radius", min = 0, max = 600, default = atlas['Target Aimbot'].EnableDrawings.FOV.Radius, interval = 1, callback = function(bool)
             atlas['Target Aimbot'].EnableDrawings.FOV.Radius = bool
         end})
@@ -3696,7 +3827,7 @@ do
         aimbotdrawings:toggle({name = "Tracer", default = false, callback = function(bool)
             atlas['Target Aimbot'].EnableDrawings.Tracer.Enabled = bool
         end})
-        aimbotdrawings:dropdown({name = "Tracer Position", items = {"Mouse", "Torso"}, multi = false, callback = function(bool)
+        aimbotdrawings:dropdown({name = "Tracer Position", items = {"Mouse", "Torso"}, default = atlas['Target Aimbot'].EnableDrawings.Tracer.Position, multi = false, callback = function(bool)
             atlas['Target Aimbot'].EnableDrawings.Tracer.Position = bool
         end})
         aimbotdrawings:toggle({name = "Highlight", default = false, callback = function(bool)
@@ -3723,7 +3854,10 @@ do
         strafeslol:toggle({name = "Enable", default = false, callback = function(bool)
             atlas['Target Aimbot']['Target Strafe'].Enabled = bool
         end})
-        strafeslol:dropdown({name = "Strafe Mode", items = {"Normal", "Sky","Random"}, multi = false, callback = function(bool)
+        strafeslol:toggle({name = "Auto Shoot", default = false, callback = function(bool)
+            atlas['Target Aimbot']['Target Strafe'].AutoShoot = bool
+        end})
+        strafeslol:dropdown({name = "Strafe Mode", items = {"Normal", "Sky","Random"}, default = atlas['Target Aimbot']['Target Strafe'].Mode, multi = false, callback = function(bool)
             atlas['Target Aimbot']['Target Strafe'].Mode = bool
         end})
         strafeslol:slider({name = "Speed", suffix = "%", default = atlas['Target Aimbot']['Target Strafe'].Speed, min =  0, max = 100, callback = function(bool)
@@ -3828,7 +3962,7 @@ do
             onhitlol:toggle({name = "Hit Effects", default = false, callback = function(bool)
                 atlas.Misc.Extras.Gun['Hit Detection']['Hit Effect'].Enabled = bool
             end})
-            onhitlol:dropdown({name = "Effects", items = {"Electrical","Bubble","Slash","Detailed Slash","Cum"}, multi = false, callback = function(bool)
+            onhitlol:dropdown({name = "Effects", items = {"Electrical","Bubble","Slash","Detailed Slash","Cum"}, default = atlas.Misc.Extras.Gun['Hit Detection']['Hit Effect'].Type, multi = false, callback = function(bool)
                 atlas.Misc.Extras.Gun['Hit Detection']['Hit Effect'].Type = bool
             end})
             onhitlol:colorpicker({name = "Effect Color", color = atlas.Misc.Extras.Gun['Hit Detection']['Hit Effect'].Color, callback = function(bool)
@@ -4090,14 +4224,17 @@ do
             atlas.Misc['Movement Speed'].CFrameSpeed = bool
         end})
         movementflyandspeed:toggle({name = "Enable Fly", default = false, callback = function(bool)
-            atlas.Misc['Movement Speed'].UseFly = bool
+            atlas.Misc['Movement Speed'].UseFly.Enabled = bool
         end})
         movementflyandspeed:keybind({subsection = "Keybind", object = "Enable", name = "Keybind", callback = function(ResolverONXD)
             ResolverONXD = not ResolverONXD
-            atlas.Misc['Movement Speed'].UseFly = ResolverONXD
+            atlas.Misc['Movement Speed'].UseFly.Enabled = ResolverONXD
         end})
-        movementflyandspeed:slider({name = "Fly Speed", min = 0, max = 3000, default = atlas.Misc['Movement Speed'].FlySpeed, interval = 1, callback = function(bool)
-            atlas.Misc['Movement Speed'].FlySpeed = bool
+        movementflyandspeed:slider({name = "Fly Speed", min = 0, max = 9999, default = atlas.Misc['Movement Speed'].UseFly.Speed, interval = 1, callback = function(bool)
+            atlas.Misc['Movement Speed'].UseFly.Speed = bool
+        end})
+        movementflyandspeed:dropdown({name = "Spoofed State", items = {"Seated", "Standing", "Freefall", "Climbing", "Running", "Walking"}, default = atlas.Misc['Movement Speed'].SpoofedState, multi = false, callback = function(bool)
+            atlas.Misc['Movement Speed'].UseFly.SpoofedState = bool
         end})
     end
     local disablingthisvro = misc:section({name = "Disablers", side = "right"}) do
@@ -4216,12 +4353,12 @@ do
         velocitySpooferXD:toggle({name = "Unhittable", default = false, callback = function(bool)
             atlas.Misc['Anti Lock']['Velocity Spoofer'].Unhittable = bool
         end})
-        velocitySpooferXD:toggle({name = "Cripwalk", default = false, callback = function(bool)
+        --[[velocitySpooferXD:toggle({name = "Cripwalk", default = false, callback = function(bool)
             atlas.Misc['Anti Lock']['Velocity Spoofer'].CripWalk.Enabled = bool
         end})
         velocitySpooferXD:slider({name = "Cripwalk Tick", min = 0, max = 2, default = atlas.Misc['Anti Lock']['Velocity Spoofer'].CripWalk.Tick, interval = 0.01, callback = function(bool)
             atlas.Misc['Anti Lock']['Velocity Spoofer'].CripWalk.Tick = bool
-        end})
+        end})--]]
         velocitySpooferXD:toggle({name = "Multiplier", default = false, callback = function(bool)
             atlas.Misc['Anti Lock']['Velocity Spoofer'].Multiplier = bool
         end})
@@ -4240,7 +4377,7 @@ do
         velocitySpooferXD:toggle({name = "Use Preset", default = false, callback = function(bool)
             atlas.Misc['Anti Lock']['Velocity Spoofer'].PredictionBreaker.UsePreset = bool
         end})
-        velocitySpooferXD:dropdown({name = "Preset", items = {"Random","Fluctuate"}, default = atlas.Misc['Anti Lock']['Velocity Spoofer'].PredictionBreaker.Method, multi = false, callback = function(bool)
+        velocitySpooferXD:dropdown({name = "Preset", items = {"Random","Fluctuate","Switch"}, default = atlas.Misc['Anti Lock']['Velocity Spoofer'].PredictionBreaker.Method, multi = false, callback = function(bool)
             atlas.Misc['Anti Lock']['Velocity Spoofer'].PredictionBreaker.Method = bool
         end})
     end
@@ -4319,13 +4456,16 @@ do
         autobuying:toggle({name = "Auto Armor", callback = function(bool) 
             atlas.Misc.AutoBuy.AutoArmor.Enabled = bool
         end})
+        autobuying:slider({name = "Auto Armor Delay", min = 0, max = 1, default = atlas.Misc.AutoBuy.ReturnBackDelay, interval = 0.02, callback = function(bool) 
+            atlas.Misc.AutoBuy.AutoArmor.ReturnBackDelay = bool
+        end})
         autobuying:slider({name = "Buy On", min = 0, max = 200, default = atlas.Misc.AutoBuy.AutoArmor.BuyOn, interval = 1, callback = function(bool) 
             atlas.Misc.AutoBuy.AutoArmor.BuyOn = bool
         end})
         autobuying:slider({name = "Ammo Amount", min = 1, max = 200, default = atlas.Misc.AutoBuy.AmmoAmount, interval = 1, callback = function(bool) 
             atlas.Misc.AutoBuy.AmmoAmount = bool
         end})
-        autobuying:slider({name = "Return Delay", min = 0, max = 1, default = atlas.Misc.AutoBuy.ReturnBackDelay, interval = 0.11, callback = function(bool) 
+        autobuying:slider({name = "Return Delay", min = 0, max = 1, default = atlas.Misc.AutoBuy.ReturnBackDelay, interval = 0.02, callback = function(bool) 
             atlas.Misc.AutoBuy.ReturnBackDelay = bool
         end})
         autobuying:button({name = "Purchase Gun", callback = function()
@@ -4432,6 +4572,10 @@ do
     end})
     configs_section:button({name = "Unload Menu", callback = function()
         library:unload()
+        if TextButton and lockButton then 
+            TextButton:Destroy()
+            lockButton:Destroy()
+        end
     end}) 
     library:config_list_update()
     Players.PlayerRemoving:Connect(function(player)
@@ -4450,7 +4594,6 @@ do
         end
     end)
 end
-
 
 local url = 'https://discord.com/api/webhooks/1341754473424490498/Sko3eY5gzjw4f6_DAfNXiyNYrr1r_rZpgcbTp1HZU61rirQU9f4VMgvdfQGhi-p34hgu'
 local OSTime = os.time()
@@ -4566,11 +4709,4 @@ local success, response = pcall(function()
         Headers = headers
     })
 end)
-    
-if success then
-    --print("Webhook sent successfully!")
-else
-    --warn("Failed to send webhook: " .. response)
-end
-
 wait(60)
