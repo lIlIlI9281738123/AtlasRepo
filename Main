@@ -28,19 +28,20 @@ getgenv().atlas = {
             ['Enabled'] = false,
         },
 		['EnableDrawings'] = {
+            ["Rainbowify"] = false,
 			['Tracer'] = {
                 ['Enabled'] = true,
                 ['Visible'] = true,
                 ['Color'] = Color3.fromRGB(84, 101, 255),
-                ['Position'] = "Middle",
+                ['Position'] = "Mouse",
             },
 			['Dot'] = {
                 ['Enabled'] = false,
                 ['Color'] = Color3.fromRGB(84, 101, 255),
             },
             ['FOV'] = {
-                ['Enabled'] = true,
-                ['Radius'] = 300,
+                ['Enabled'] = false,
+                ['Radius'] = 120,
                 ['Color'] = Color3.fromRGB(84, 101, 255),
                 ['Position'] = "Middle",
             },
@@ -374,7 +375,13 @@ local Assets = {
         Functions = {},
         Drawings = {},
         lastrender = 0,
-        SavedPrediction = atlas['Target Aimbot'].Prediction.Amount
+    },
+    SavedDrawingColors = {
+        FOV = atlas['Target Aimbot'].EnableDrawings.FOV.Color,
+        Tracer = atlas['Target Aimbot'].EnableDrawings.Tracer.Color,
+        HighlightOutter = atlas['Target Aimbot'].Highlight.Outline,
+        HighlightInner = atlas['Target Aimbot'].Highlight.Fill,
+        Dot = atlas['Target Aimbot'].EnableDrawings.Dot.Color,
     },
     BlacklistedGames = {
         { Name = "Da Hood", ID = 2788229376 },
@@ -392,15 +399,8 @@ local drawings = {
     LocalHL = Instance.new("Highlight"),
     TargetHighlight = Instance.new("Highlight"),
     IgnoreAtlasF = Instance.new("Folder", workspace),
-    DesyncCircle = Drawing.new("Circle"),
     FollowGunCircle = Drawing.new("Circle")
 }
-
-
-drawings.DesyncCircle.Color = Color3.new(255,255,255)
-drawings.DesyncCircle.Radius = 10
-drawings.DesyncCircle.Filled = true
-drawings.DesyncCircle.Visible = false
 
 drawings.SelfDotCircle.Visible = false
 drawings.SelfDotCircle.Filled = true
@@ -984,10 +984,6 @@ local function getClosestPlayerToCursor()
                         continue
                     end
                     
-                    if targetHumanoidRoot.Velocity.Y < 0 then
-                        targetHumanoidRoot.Velocity = Vector3.new(targetHumanoidRoot.Velocity.X, 0, targetHumanoidRoot.Velocity.Z) * 0.36
-                    end
-                    
                     if atlas["Target Aimbot"].Checks.Grabbed and player.Character:FindFirstChild("BodyEffects") and player.Character.BodyEffects:FindFirstChild("GRABBING_CONSTRAINT") then
                         continue
                     end
@@ -1136,7 +1132,7 @@ RecalculateLOL = function(obj, delta)
         local velocity = distanceTraveled / timeInterval
         currentPosition = newPosition
         currentTime = newTime
-        RootPart.Velocity = velocity
+        RootPart.Velocity = velocity 
     end
 end
 
@@ -2263,20 +2259,7 @@ local function UpdateVelocitySpoofing()
         elseif velocitySpoofer.Multiplier then 
             humanoidRootPart.Velocity = humanoidRootPart.Velocity * 100
         end
-        
-        if velocitySpoofer.ShowVisualizer then
-            local predictedPos = humanoidRootPart.Position + (humanoidRootPart.AssemblyLinearVelocity * 0.1)
-            local screenPos, onScreen = Camera:WorldToViewportPoint(predictedPos)
-    
-            if onScreen then
-                drawings.DesyncCircle.Visible = true
-                drawings.DesyncCircle.Position = Vector2.new(screenPos.X, screenPos.Y)
-            else
-                drawings.DesyncCircle.Visible = false
-            end
-        else
-            drawings.DesyncCircle.Visible = false
-        end
+
         
         RunService.RenderStepped:Wait()
         
@@ -2289,65 +2272,96 @@ local isAlive = function(player)
     return (player and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character:FindFirstChild("HumanoidRootPart")) and true or false
 end
 
-local isAlive = function(player)
-    return player and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character:FindFirstChild("HumanoidRootPart")
-end
+local desyncVelocityDirection = false
 
 RunService.Heartbeat:Connect(function()
     local PredictionB = atlas.Misc['Anti Lock']['Velocity Spoofer'].PredictionBreaker
-    if PredictionB.Enabled then 
+    local toggled = atlas.Misc['Anti Lock']['Velocity Spoofer'].Enabled
+    if PredictionB.Enabled and toggled then
         if isAlive(Client) then
-            oldvel = humanoidRootPart.Velocity
+            local clientCharacter = Client.Character
+            local humanoidRootPart = clientCharacter:FindFirstChild("HumanoidRootPart")
+            local oldVel = humanoidRootPart.AssemblyLinearVelocity
 
-            if not PredictionB.UsePreset then
-                PredictionB.Velocity = PredictionB.Velocity or Vector3.new(0, 0, 0)
-            else
-                if PredictionB.Method == "Random" then
-                    PredictionB.Velocity = Vector3.new(
-                        math.random(-6000, 6000),
-                        math.random(0, 6000),
-                        math.random(-6000, 6000)
-                    )
-                elseif PredictionB.Method == "Fluctuate" then
-                    if PredictionB.Velocity.X >= 6000 then
-                        desyncVelocityDirection = true
-                    elseif PredictionB.Velocity.X <= -6000 then
-                        desyncVelocityDirection = false
-                    end
+            local desyncVelocityX = PredictionB.Velocity.X
+            local desyncVelocityY = PredictionB.Velocity.Y
+            local desyncVelocityZ = PredictionB.Velocity.Z
 
-                    local xVelAmt = desyncVelocityAmount >= 0 and 0 or desyncVelocityAmount
-                    PredictionB.Velocity = Vector3.new(
-                        desyncVelocityAmount,
-                        xVelAmt,
-                        desyncVelocityAmount
-                    )
+            humanoidRootPart.AssemblyLinearVelocity = Vector3.new(desyncVelocityX, desyncVelocityY, desyncVelocityZ)
+            humanoidRootPart.CFrame = humanoidRootPart.CFrame * CFrame.Angles(0, 0.0001, 0)
+                
+            RunService.RenderStepped:Wait()
+            humanoidRootPart.AssemblyLinearVelocity = oldVel
 
-                    if desyncVelocityDirection then
-                        desyncVelocityAmount -= 1
+                if PredictionB.UsePreset == true then
+                    if PredictionB.Method == "Random" then
+                        PredictionB.Velocity.X = (math.random(-6000, 6000))
+                        PredictionB.Velocity.Y = (math.random(0, 6000))
+                        PredictionB.Velocity.Z = (math.random(-6000, 6000))
+                    elseif PredictionB.Method == "Fluctuate" then
+                        if desyncVelocityDirection then
+                            desyncVelocityDirection = false
+                            desyncVelocityAmount = desyncVelocityAmount - 1
+                        else
+                            desyncVelocityDirection = true
+                            desyncVelocityAmount = desyncVelocityAmount + 1
+                        end
+                        local xVelAmt = (desyncVelocityAmount >= 0) and 0 or desyncVelocityAmount
+                        PredictionB.Velocity.X = (desyncVelocityAmount)
+                        PredictionB.Velocity.Y = (xVelAmt)
+                        PredictionB.Velocity.Z = (desyncVelocityAmount)
+                    elseif PredictionB.Method == "Switch" then
+                        if desyncVelocityDirection then
+                            desyncVelocityDirection = false
+                            PredictionB.Velocity.X =(1000)
+                            PredictionB.Velocity.Y = (1000)
+                        else
+                            PredictionB.Velocity.X =(-1000)
+                            PredictionB.Velocity.Y =(-1000)
+                            desyncVelocityDirection = true
+                        end
+                    elseif PredictionB.Method == "Juju" then
+                        if desyncVelocityDirection then
+                            desyncVelocityDirection = false
+                            PredictionB.Velocity.X =(-9e9)
+                            PredictionB.Velocity.Y = (math.random(9e99, 909))
+                            PredictionB.Velocity.Z =(-9e9)
+                        else
+                            PredictionB.Velocity.X =(-999)
+                            PredictionB.Velocity.Y = (math.random(-9e99, 909))
+                            PredictionB.Velocity.Z = (9909)
+                            desyncVelocityDirection = true
+                        end
                     else
-                        desyncVelocityAmount += 1
+                        PredictionB.Velocity.Y = (math.random(150, 6000))
                     end
-
-                elseif PredictionB.Method == "Switch" then
-                    if desyncVelocityDirection then
-                        desyncVelocityDirection = false
-                        PredictionB.Velocity = Vector3.new(1000, 0, 1000)
-                    else
-                        PredictionB.Velocity = Vector3.new(-1000, 0, -1000)
-                        desyncVelocityDirection = true
-                    end
-                else
-                    PredictionB.Velocity = Vector3.zero
                 end
             end
-
-            humanoidRootPart.Velocity = PredictionB.Velocity
-            humanoidRootPart.CFrame = humanoidRootPart.CFrame * CFrame.Angles(0, 0.0001, 0)
-            RunService.RenderStepped:Wait()
-            humanoidRootPart.Velocity = oldvel
         end
-    end 
 end)
+
+local function UpdateRainbowAll()
+    local aimbotSettings = atlas['Target Aimbot']
+    if aimbotSettings.EnableDrawings.Rainbowify then
+        local hue = tick() % 1
+        local rainbow = Color3.fromHSV(hue, 1, 1)
+
+        drawings.FOVCircle.Color = rainbow
+        drawings.TargetTracer.Color = rainbow 
+        drawings.TargetDot.Color = rainbow 
+        drawings.LocalHL.FillColor = rainbow
+        drawings.LocalHL.OutlineColor = rainbow
+    else
+        local drawSettings = aimbotSettings.EnableDrawings
+        local highlightSettings = aimbotSettings.Highlight
+
+        drawings.FOVCircle.Color = drawSettings.FOV.Color
+        drawings.TargetTracer.Color = drawSettings.Tracer.Color
+        drawings.TargetDot.Color = drawSettings.Dot.Color
+        drawings.LocalHL.FillColor = highlightSettings.Fill
+        drawings.LocalHL.OutlineColor = highlightSettings.Outline
+    end
+end
 
 local originalCFrame
 originalCFrame = hookmetamethod(game, "__index", newcclosure(function(self, key)
@@ -2407,7 +2421,6 @@ grmt.__index = newcclosure(function(self, v)
 
     return originalIndex(self, v)
 end)
-
 setreadonly(grmt, true)
 
 local themes = {
@@ -2816,43 +2829,28 @@ local function UpdateSlow()
         return
     end
     
-    local bodyEffects = Character:FindFirstChild("BodyEffects")
-    if not bodyEffects then return end
-
-    local movement = bodyEffects:FindFirstChild("Movement")
-    if movement then
-        local noJumping = movement:FindFirstChild('NoJumping')
-        local reduceWalk = movement:FindFirstChild('ReduceWalk')
-        local noWalkSpeed = movement:FindFirstChild('NoWalkSpeed')
-        
-        if noJumping then 
-            noJumping:Destroy() 
-        end
-        if reduceWalk then 
-            reduceWalk:Destroy() 
-        end
-        if noWalkSpeed then 
-            noWalkSpeed:Destroy() 
+    local Bd = Character:FindFirstChild("BodyEffects")
+    local mm = Bd:FindFirstChild("Movement")
+    local SlowdownEffects = {
+        "NoWalkSpeed",
+        "NoJumping",
+        "ReduceWalk"
+    }
+    for _, effect in next, SlowdownEffects do
+        if mm:FindFirstChild(effect) then
+            mm:FindFirstChild(effect):Destroy()
         end
     end
-
-    for _, effect in ipairs(bodyEffects:GetChildren()) do
-        local nameLower = effect.Name:lower()
-        if effect:IsA("BoolValue") or effect:IsA("IntValue") or effect:IsA("StringValue") then
-            if nameLower:find("reload") then
-                effect.Value = false
-            end
-        elseif nameLower:find("reload") then
-            effect:Destroy()
-        end
+    if Bd.Reload.Value == true then
+        Bd.Reload.Value = false
     end
 end
 
 local function UpdateJumpCoolD()
-    if atlas.Misc['No Jumpcool Down'] == true then
-        humanoid.UseJumpPower = false
+    if atlas.Misc['No Jumpcool Down'] then
+        Character.Humanoid.UseJumpPower = false
     else 
-        humanoid.UseJumpPower = true
+        Character.Humanoid.UseJumpPower = true
     end
 end
 
@@ -3228,8 +3226,63 @@ local function updateLighting()
                     Ft = "rbxassetid://6489194051", Lf = "rbxassetid://6489194051",
                     Rt = "rbxassetid://6489194051", Up = "rbxassetid://6489194051"
                 },
-            }
-        
+                ["Default"] = {
+                    Bk = "rbxassetid://591058823", Dn = "rbxassetid://591059876",
+                    Ft = "rbxassetid://591058104", Lf = "rbxassetid://591057861",
+                    Rt = "rbxassetid://591057625", Up = "rbxassetid://591059642"
+                },
+                ["Vaporwave"] = {
+                    Bk = "rbxassetid://1417494030", Dn = "rbxassetid://1417494146",
+                    Ft = "rbxassetid://1417494253", Lf = "rbxassetid://1417494402",
+                    Rt = "rbxassetid://1417494499", Up = "rbxassetid://1417494643"
+                },
+                ["Redshift"] = {
+                    Bk = "rbxassetid://401664839", Dn = "rbxassetid://401664862",
+                    Ft = "rbxassetid://401664960", Lf = "rbxassetid://401664881",
+                    Rt = "rbxassetid://401664901", Up = "rbxassetid://401664936"
+                },
+                ["Desert"] = {
+                    Bk = "rbxassetid://1013852", Dn = "rbxassetid://1013853",
+                    Ft = "rbxassetid://1013850", Lf = "rbxassetid://1013851",
+                    Rt = "rbxassetid://1013849", Up = "rbxassetid://1013854"
+                },
+                ["DaBaby"] = {
+                    Bk = "rbxassetid://7245418472", Dn = "rbxassetid://7245418472",
+                    Ft = "rbxassetid://7245418472", Lf = "rbxassetid://7245418472",
+                    Rt = "rbxassetid://7245418472", Up = "rbxassetid://7245418472"
+                },
+                ["Minecraft"] = {
+                    Bk = "rbxassetid://1876545003", Dn = "rbxassetid://1876544331",
+                    Ft = "rbxassetid://1876542941", Lf = "rbxassetid://1876543392",
+                    Rt = "rbxassetid://1876543764", Up = "rbxassetid://1876544642"
+                },
+                ["SpongeBob"] = {
+                    Bk = "rbxassetid://7633178166", Dn = "rbxassetid://7633178166",
+                    Ft = "rbxassetid://7633178166", Lf = "rbxassetid://7633178166",
+                    Rt = "rbxassetid://7633178166", Up = "rbxassetid://7633178166"
+                },
+                ["Skibidi"] = {
+                    Bk = "rbxassetid://14952256113", Dn = "rbxassetid://14952256113",
+                    Ft = "rbxassetid://14952256113", Lf = "rbxassetid://14952256113",
+                    Rt = "rbxassetid://14952256113", Up = "rbxassetid://14952256113"
+                },
+                ["Blaze"] = {
+                    Bk = "rbxassetid://150939022", Dn = "rbxassetid://150939038",
+                    Ft = "rbxassetid://150939047", Lf = "rbxassetid://150939056",
+                    Rt = "rbxassetid://150939063", Up = "rbxassetid://150939082"
+                },
+                ["Pussy Cat"] = {
+                    Bk = "rbxassetid://11154422902", Dn = "rbxassetid://11154422902",
+                    Ft = "rbxassetid://11154422902", Lf = "rbxassetid://11154422902",
+                    Rt = "rbxassetid://11154422902", Up = "rbxassetid://11154422902"
+                },
+                ["Among Us"] = {
+                    Bk = "rbxassetid://5752463190", Dn = "rbxassetid://5752463190",
+                    Ft = "rbxassetid://5752463190", Lf = "rbxassetid://5752463190",
+                    Rt = "rbxassetid://5752463190", Up = "rbxassetid://5752463190"
+                }
+            }            
+
             local skyboxData = skyboxes[atlas.Misc.Extras.World['Sky Box'].Type]
         
             if skyboxData then
@@ -3453,7 +3506,7 @@ updatePredictionValue = function()
         end
     end
 end
-
+local SavedPrediction = atlas['Target Aimbot'].Prediction.Amount
 local function UpdatePrediction()
     local settings = atlas['Target Aimbot']
     local PredictionValue = settings.Prediction.Amount
@@ -3465,7 +3518,7 @@ local function UpdatePrediction()
         Pred.Visible = false
     end
     if not settings.Prediction['Auto Prediction'].Enabled then
-        settings.Prediction.Amount = Assets.OtherStored.SavedPrediction       
+        settings.Prediction.Amount = SavedPrediction       
     end
 end
 
@@ -3613,6 +3666,8 @@ do
 
         UpdateAutoShootStrafe()
 
+        UpdateRainbowAll()
+
         --UpdateCripWalk()
     end)
     
@@ -3668,7 +3723,7 @@ local function createToggleButton(player)
     TextButton.Draggable = true
     UICorner.Parent = TextButton
 
-    local toggle = false
+    local toggle = true
     TextButton.MouseButton1Down:Connect(function()
         toggle = not toggle
         window.set_menu_visibility(toggle)
@@ -3685,7 +3740,7 @@ if UserInputService.TouchEnabled then
         createToggleButton(Client)
 
         Client.CharacterAdded:Connect(function()
-            task.wait(1) 
+            task.wait(0.5) 
             createToggleButton(Client)
         end)
     end
@@ -3832,6 +3887,9 @@ do
         end})
         aimbotdrawings:toggle({name = "Highlight", default = false, callback = function(bool)
             atlas['Target Aimbot'].Highlight.Enabled = bool
+        end})
+        aimbotdrawings:toggle({name = "Rainbowify", default = false, callback = function(bool)
+            atlas['Target Aimbot'].EnableDrawings.Rainbowify = bool
         end})
         aimbotdrawings:colorpicker({name = "FOV Color", color = atlas['Target Aimbot'].EnableDrawings.FOV.Color, callback = function(bool)
             atlas['Target Aimbot'].EnableDrawings.FOV.Color = bool
@@ -4095,7 +4153,7 @@ do
                 worldlolclient:toggle({name = "Sky Box", default = false, callback = function(bool)
                     atlas.Misc.Extras.World['Sky Box'].Enabled = bool
                 end})
-                worldlolclient:dropdown({name = "Sky Box Type", items = {"Nebula","Dark Night","Space","Green","Red","Purple","Doom Spire","Galaxy V1"}, default = atlas.Misc.Extras.World['Sky Box'].Type, multi = false, callback = function(bool)
+                worldlolclient:dropdown({name = "Sky Box Type", items = {"Default","Nebula", "Dark Night", "Space", "Green", "Red", "Purple", "Doom Spire", "Galaxy V1", "Vaporwave", "Redshift", "Desert", "DaBaby", "Minecraft", "SpongeBob", "Skibidi", "Blaze", "Pussy Cat", "Among Us"}, default = atlas.Misc.Extras.World['Sky Box'].Type, multi = false, callback = function(bool)
                     atlas.Misc.Extras.World['Sky Box'].Type = bool
                 end})
                 worldlolclient:toggle({name = "Ambience", default = false, callback = function(bool)
@@ -4347,9 +4405,6 @@ do
         velocitySpooferXD:toggle({name = "Notify", default = false, callback = function(bool)
             atlas.Misc['Anti Lock']['Velocity Spoofer'].Notify = bool
         end})
-        velocitySpooferXD:toggle({name = "Show Velocity Dot", default = false, callback = function(bool)
-            atlas.Misc['Anti Lock']['Velocity Spoofer'].ShowVisualizer = bool
-        end})
         velocitySpooferXD:toggle({name = "Unhittable", default = false, callback = function(bool)
             atlas.Misc['Anti Lock']['Velocity Spoofer'].Unhittable = bool
         end})
@@ -4377,7 +4432,7 @@ do
         velocitySpooferXD:toggle({name = "Use Preset", default = false, callback = function(bool)
             atlas.Misc['Anti Lock']['Velocity Spoofer'].PredictionBreaker.UsePreset = bool
         end})
-        velocitySpooferXD:dropdown({name = "Preset", items = {"Random","Fluctuate","Switch"}, default = atlas.Misc['Anti Lock']['Velocity Spoofer'].PredictionBreaker.Method, multi = false, callback = function(bool)
+        velocitySpooferXD:dropdown({name = "Preset", items = {"Random","Switch","Juju"}, default = atlas.Misc['Anti Lock']['Velocity Spoofer'].PredictionBreaker.Method, multi = false, callback = function(bool)
             atlas.Misc['Anti Lock']['Velocity Spoofer'].PredictionBreaker.Method = bool
         end})
     end
