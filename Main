@@ -3525,6 +3525,11 @@ end
 local function UpdateForceHitting()
     if atlas['Target Aimbot']['Force Hit'].Enabled then
         if TargetPlayer and TargetPlayer.Character then
+            
+            if TargetPlayer.Character:FindFirstChildOfClass("ForceField") then 
+                return 
+            end
+
             local a = atlas['Target Aimbot'].AimPart
             local b = TargetPlayer.Character:FindFirstChild(a)
             local c = TargetPlayer.Character:FindFirstChild("HumanoidRootPart")
