@@ -3530,11 +3530,10 @@ local function UpdateForceHitting()
                 return 
             end
 
-            local a = atlas['Target Aimbot'].AimPart
-            local b = TargetPlayer.Character:FindFirstChild(a)
+            local b = TargetPlayer.Character:FindFirstChild("Head")
             local c = TargetPlayer.Character:FindFirstChild("HumanoidRootPart")
 
-            if a and b and c then
+            if b and c then
                 local CurrentPosition = humanoidRootPart.Position
                 local ShootDirection = humanoidRootPart.CFrame.LookVector
                 local ShootPosition = CurrentPosition + ShootDirection * 10
