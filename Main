@@ -1,8 +1,3 @@
-if game:GetService('TouchEnabled') then 
-game.Players.LocalPlayer:Kick('ahh we removed mobile support cuz ur poor get a pc nigga goodbye ✌')
-end
-
-
 game.StarterGui:SetCore("SendNotification", {
     Title = "discord.gg/SjE932Qugv",
     Text = "",
