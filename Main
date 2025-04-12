@@ -1,5 +1,5 @@
 if game:GetService('TouchEnabled') then 
-game.Players.LocalPlayer:Kick('ahh we removed mobile support cuz ur poor get a pc nigga goodbye ✌ 
+game.Players.LocalPlayer:Kick('ahh we removed mobile support cuz ur poor get a pc nigga goodbye ✌')
 end
 
 
