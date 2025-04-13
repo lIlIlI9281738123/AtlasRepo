@@ -1,3 +1,7 @@
+if game:GetService('UserInputService').TouchEnabled then 
+    game.Players.LocalPlayer:Kick('ur poor get a pc nigga goodbye ✌')
+end
+
 game.StarterGui:SetCore("SendNotification", {
     Title = "discord.gg/SjE932Qugv",
     Text = "",
